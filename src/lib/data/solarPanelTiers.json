@@ -1,0 +1,107 @@
+{
+  "description": "Realistic residential solar panel tiers based on usable roof area",
+  "methodology": "Each panel requires ~5.5 m² of usable roof area including spacing, setbacks, and walkways",
+  "panelSpecifications": {
+    "wattage": 400,
+    "areaSqM": 1.7,
+    "effectiveAreaPerPanel": 5.5,
+    "note": "Effective area includes 0.9m fire code setback, walkways, and row spacing"
+  },
+  "tiers": [
+    {
+      "name": "Very Small Roof",
+      "usableAreaMin": 30,
+      "usableAreaMax": 49,
+      "minPanels": 5,
+      "maxPanels": 8,
+      "typicalPanels": 6,
+      "systemSizeKW": "2.0-3.2",
+      "annualProductionKWh": "2,918-4,669",
+      "description": "Small bungalow or cottage"
+    },
+    {
+      "name": "Small Roof",
+      "usableAreaMin": 50,
+      "usableAreaMax": 59,
+      "minPanels": 8,
+      "maxPanels": 10,
+      "typicalPanels": 9,
+      "systemSizeKW": "3.2-4.0",
+      "annualProductionKWh": "4,669-5,836",
+      "description": "Small residential home"
+    },
+    {
+      "name": "Medium-Small Roof",
+      "usableAreaMin": 60,
+      "usableAreaMax": 69,
+      "minPanels": 11,
+      "maxPanels": 13,
+      "typicalPanels": 12,
+      "systemSizeKW": "4.4-5.2",
+      "annualProductionKWh": "6,420-7,587",
+      "description": "Average single-story home"
+    },
+    {
+      "name": "Medium Roof",
+      "usableAreaMin": 70,
+      "usableAreaMax": 79,
+      "minPanels": 13,
+      "maxPanels": 15,
+      "typicalPanels": 14,
+      "systemSizeKW": "5.2-6.0",
+      "annualProductionKWh": "7,587-8,754",
+      "description": "Standard 2-story home"
+    },
+    {
+      "name": "Medium-Large Roof",
+      "usableAreaMin": 80,
+      "usableAreaMax": 89,
+      "minPanels": 15,
+      "maxPanels": 17,
+      "typicalPanels": 16,
+      "systemSizeKW": "6.0-6.8",
+      "annualProductionKWh": "8,754-9,921",
+      "description": "Large 2-story home"
+    },
+    {
+      "name": "Large Roof",
+      "usableAreaMin": 90,
+      "usableAreaMax": 99,
+      "minPanels": 17,
+      "maxPanels": 19,
+      "typicalPanels": 18,
+      "systemSizeKW": "6.8-7.6",
+      "annualProductionKWh": "9,921-11,088",
+      "description": "Large home or small ranch (PEI median system size)"
+    },
+    {
+      "name": "Very Large Roof",
+      "usableAreaMin": 100,
+      "usableAreaMax": 119,
+      "minPanels": 19,
+      "maxPanels": 22,
+      "typicalPanels": 20,
+      "systemSizeKW": "7.6-8.8",
+      "annualProductionKWh": "11,088-12,839",
+      "description": "Very large home or ranch"
+    },
+    {
+      "name": "Extra Large Roof",
+      "usableAreaMin": 120,
+      "usableAreaMax": 150,
+      "minPanels": 22,
+      "maxPanels": 27,
+      "typicalPanels": 24,
+      "systemSizeKW": "8.8-10.8",
+      "annualProductionKWh": "12,839-15,757",
+      "description": "Estate home or small farm (PEI 80th percentile)"
+    }
+  ],
+  "notes": [
+    "PEI residential median: 7.2 kW (18 panels)",
+    "PEI residential 80th percentile: 11 kW (27 panels)",
+    "Annual production uses PEI photovoltaic potential: 1459 kWh/kWp",
+    "Effective area per panel (5.5 m²) accounts for all spacing and setbacks",
+    "Above 27 panels (>11 kW) approaches commercial-scale systems"
+  ]
+}
