@@ -62,10 +62,13 @@ export function Navbar() {
                                         <svg className="ml-1 w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="center" className="w-48 p-2 rounded-2xl bg-background/80 backdrop-blur-lg border-white/20 shadow-2xl animate-in">
+                                <DropdownMenuContent align="center" className="w-56 p-2 rounded-2xl bg-popover/80 backdrop-blur-xl border border-white/10 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200">
                                     {link.dropdown.map((item) => (
-                                        <DropdownMenuItem key={item.href} asChild className="rounded-xl focus:bg-primary focus:text-white transition-all cursor-pointer">
-                                            <Link href={item.href} className="font-medium p-2 block w-full">{item.label}</Link>
+                                        <DropdownMenuItem key={item.href} asChild className="rounded-xl focus:bg-primary focus:text-white transition-all cursor-pointer py-2.5 px-4 mb-1 last:mb-0">
+                                            <Link href={item.href} className="flex items-center gap-3 w-full">
+                                                <span className="font-bold text-sm">{item.label}</span>
+                                                <svg className="ml-auto w-4 h-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                            </Link>
                                         </DropdownMenuItem>
                                     ))}
                                 </DropdownMenuContent>

@@ -1,8 +1,9 @@
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
+  className?: string;
 }
 
-export function LoadingSpinner({ size = 'md' }: LoadingSpinnerProps) {
+export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) {
   const sizeClasses = {
     sm: 'w-6 h-6',
     md: 'w-12 h-12',
@@ -10,10 +11,10 @@ export function LoadingSpinner({ size = 'md' }: LoadingSpinnerProps) {
   };
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className={`flex flex-col items-center gap-4 ${className || ''}`}>
       <div className={`${sizeClasses[size]} relative`}>
-        <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
-        <div className="absolute inset-0 border-4 border-transparent border-t-blue-600 rounded-full animate-spin"></div>
+        <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
+        <div className="absolute inset-0 border-4 border-transparent border-t-primary rounded-full animate-spin" />
       </div>
     </div>
   );

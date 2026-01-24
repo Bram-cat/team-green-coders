@@ -135,7 +135,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/30 selection:text-primary;
     font-family: 'CabinetGrotesk', sans-serif;
   }
 }
@@ -145,25 +145,42 @@
     @apply bg-background/70 backdrop-blur-md border border-white/20;
   }
 
-  .animate-in {
-    animation: animate-in 0.5s ease-out forwards;
-  }
-
-  @keyframes animate-in {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
   .hover-glow {
     @apply transition-all duration-300 hover:shadow-[0_0_20px_rgba(var(--primary), 0.3)] hover:scale-[1.02];
   }
+}
+
+/* Radix & Shadcn Animations */
+@keyframes in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+}
+
+.animate-in {
+  animation: in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-out {
+  animation: out 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes fade-in-up {
@@ -179,7 +196,7 @@
 }
 
 .animate-fade-in-up {
-  animation: fade-in-up 0.6s ease-out forwards;
+  animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-fade-in {
