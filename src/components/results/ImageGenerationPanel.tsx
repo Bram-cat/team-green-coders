@@ -23,46 +23,68 @@ export function ImageGenerationPanel({ imagePrompts, address }: ImageGenerationP
 
         try {
             console.log(`[Image Generation] Generating ${angle} view...`);
-            console.log('Prompt:', prompt.prompt);
 
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Try to generate real image via API
+            let imageUrl: string | null = null;
+            try {
+                const response = await fetch('/api/generate-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt.prompt }),
+                });
 
-            // Create robust SVG placeholder
-            const colors = {
-                aerial: { bg: '#3b82f6', accent: '#60a5fa', text: 'Aerial View' },
-                south: { bg: '#10b981', accent: '#34d399', text: 'South View' },
-                west: { bg: '#f59e0b', accent: '#fbbf24', text: 'West View' }
-            };
-            const theme = colors[angle];
+                const data = await response.json();
 
-            const svgContent = `
-                <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="grad-${angle}" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:${theme.bg};stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:${theme.accent};stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <rect width="800" height="600" fill="url(#grad-${angle})"/>
-                    <text x="400" y="280" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle" filter="drop-shadow(0px 2px 2px rgba(0,0,0,0.3))">
-                        ${theme.text.toUpperCase()}
-                    </text>
-                    <text x="400" y="340" font-family="Arial, sans-serif" font-size="24" fill="white" text-anchor="middle" opacity="0.9">
-                        Visualization Placeholder
-                    </text>
-                    <text x="400" y="380" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle" opacity="0.8">
-                        To enable AI imagery, integrate Google Imagen API
-                    </text>
-                </svg>
-            `;
+                if (data.success && data.imageUrl) {
+                    imageUrl = data.imageUrl;
+                } else {
+                    console.warn('AI generation response issue:', data.error);
+                }
+            } catch (apiError) {
+                console.warn('API call failed, falling back to SVG:', apiError);
+            }
 
-            // Use encodeURIComponent for reliable data URI
-            const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent.trim())}`;
+            if (imageUrl) {
+                setGeneratedImages(prev => ({ ...prev, [angle]: imageUrl }));
+            } else {
+                // Fallback: Create robust SVG placeholder
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay if API was instant fail
 
-            setGeneratedImages(prev => ({
-                ...prev,
-                [angle]: dataUrl
-            }));
+                const colors = {
+                    aerial: { bg: '#3b82f6', accent: '#60a5fa', text: 'Aerial View' },
+                    south: { bg: '#10b981', accent: '#34d399', text: 'South View' },
+                    west: { bg: '#f59e0b', accent: '#fbbf24', text: 'West View' }
+                };
+                const theme = colors[angle];
+
+                const svgContent = `
+                    <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="grad-${angle}" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:${theme.bg};stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:${theme.accent};stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <rect width="800" height="600" fill="url(#grad-${angle})"/>
+                        <text x="400" y="280" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle" filter="drop-shadow(0px 2px 2px rgba(0,0,0,0.3))">
+                            ${theme.text.toUpperCase()}
+                        </text>
+                        <text x="400" y="340" font-family="Arial, sans-serif" font-size="24" fill="white" text-anchor="middle" opacity="0.9">
+                            Visualization Placeholder
+                        </text>
+                        <text x="400" y="380" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle" opacity="0.8">
+                            (AI generation unavailable)
+                        </text>
+                    </svg>
+                `;
+
+                const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent.trim())}`;
+
+                setGeneratedImages(prev => ({
+                    ...prev,
+                    [angle]: dataUrl
+                }));
+            }
         } catch (error) {
             console.error('Failed to generate image:', error);
         } finally {
@@ -122,7 +144,7 @@ export function ImageGenerationPanel({ imagePrompts, address }: ImageGenerationP
                                 {currentPrompt?.description}
                             </p>
                             <p className="text-sm text-gray-500 mb-4">
-                                Click the button below to generate a photorealistic visualization
+                                Click the button below to generate a visualization
                             </p>
                         </div>
                         <button
