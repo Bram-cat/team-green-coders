@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
-import { analyzeRoofImage } from '@/lib/analysis/roofAnalysis';
+import { analyzeRoofImageFromBuffer } from '@/lib/analysis/roofAnalysis';
 import { getLocationSolarPotential } from '@/lib/analysis/solarPotential';
 import { calculateRecommendation } from '@/lib/utils/scoreCalculation';
+import { generateFinancialSummary } from '@/lib/ai/geminiService';
 import { Address } from '@/types/address';
 import { AnalyzeAPIResponse } from '@/types/api';
 
@@ -55,9 +56,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
       );
     }
 
-    // Save image temporarily for analysis
+    // Convert image to buffer
     const bytes = await image.arrayBuffer();
     const buffer = Buffer.from(bytes);
+
+    // Save image temporarily (for file-based operations if needed)
     const uploadDir = join(process.cwd(), 'tmp', 'uploads');
     await mkdir(uploadDir, { recursive: true });
 
@@ -67,14 +70,45 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
 
     await writeFile(tempFilePath, buffer);
 
+    // Convert image to base64 for client-side visualization
+    const imageBase64 = buffer.toString('base64');
+    const imageDataUrl = `data:${image.type};base64,${imageBase64}`;
+
     // Run analysis (parallel execution for performance)
-    const [roofAnalysis, solarPotential] = await Promise.all([
-      analyzeRoofImage(tempFilePath),
+    const [roofAnalysisResult, solarPotentialResult] = await Promise.all([
+      analyzeRoofImageFromBuffer(buffer, image.type),
       getLocationSolarPotential(address),
     ]);
 
+    // Extract base roof analysis (without extra metadata)
+    const roofAnalysis = {
+      roofAreaSqMeters: roofAnalysisResult.roofAreaSqMeters,
+      shadingLevel: roofAnalysisResult.shadingLevel,
+      roofPitchDegrees: roofAnalysisResult.roofPitchDegrees,
+      complexity: roofAnalysisResult.complexity,
+      usableAreaPercentage: roofAnalysisResult.usableAreaPercentage,
+    };
+
+    // Extract base solar potential (without extra metadata)
+    const solarPotential = {
+      yearlySolarPotentialKWh: solarPotentialResult.yearlySolarPotentialKWh,
+      averageIrradianceKWhPerSqM: solarPotentialResult.averageIrradianceKWhPerSqM,
+      optimalPanelCount: solarPotentialResult.optimalPanelCount,
+      peakSunHoursPerDay: solarPotentialResult.peakSunHoursPerDay,
+    };
+
     // Calculate recommendation
     const recommendation = calculateRecommendation(roofAnalysis, solarPotential);
+
+    // Generate AI summary if financials are available
+    let aiSummary: string | undefined;
+    if (recommendation.financials) {
+      aiSummary = await generateFinancialSummary(
+        recommendation.financials,
+        roofAnalysis,
+        recommendation.systemSizeKW
+      );
+    }
 
     // Clean up temp file
     if (tempFilePath) {
@@ -87,6 +121,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
         recommendation,
         roofAnalysis,
         solarPotential,
+        // AI metadata
+        aiConfidence: roofAnalysisResult.aiConfidence,
+        usedAI: roofAnalysisResult.usedAI,
+        usedRealGeocoding: solarPotentialResult.usedRealGeocoding,
+        geocodedLocation: solarPotentialResult.geocodedLocation,
+        // Image for visualization
+        uploadedImageBase64: imageDataUrl,
+        aiSummary,
       },
     });
 

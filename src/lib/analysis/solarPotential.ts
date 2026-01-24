@@ -7,43 +7,34 @@ import {
   PEI_COMBINED_EFFICIENCY,
   PEI_INSTALLATION_COSTS,
 } from '@/lib/data/peiSolarData';
+import { geocodeAddress as realGeocodeAddress, isGeocodingAvailable } from '@/lib/services/geocodingService';
 
 /**
  * Geocodes an address to get latitude/longitude.
  *
- * For PEI MVP: Returns PEI coordinates for any address.
- * TODO: Replace with actual geocoding API when API keys are provided:
- * - Google Maps Geocoding API
- * - Mapbox Geocoding API
- * - OpenStreetMap Nominatim
+ * Uses Google Maps Geocoding API when available, falls back to PEI defaults.
  *
  * @param address - User-provided address
- * @returns Promise<GeocodedLocation>
+ * @returns Promise<GeocodedLocation & { usedRealGeocoding: boolean }>
  */
-async function geocodeAddress(address: Address): Promise<GeocodedLocation> {
-  // TODO: Implement actual geocoding when API key is available
-  // const apiKey = process.env.GEOCODE_API_KEY;
-  // const response = await fetch(
-  //   `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-  //     `${address.street}, ${address.city}, ${address.postalCode}, ${address.country}`
-  //   )}&key=${apiKey}`
-  // );
-  // const data = await response.json();
-  // return {
-  //   latitude: data.results[0].geometry.location.lat,
-  //   longitude: data.results[0].geometry.location.lng,
-  //   formattedAddress: data.results[0].formatted_address,
-  // };
+export async function geocodeAddressForSolar(
+  address: Address
+): Promise<GeocodedLocation & { usedRealGeocoding: boolean }> {
+  if (isGeocodingAvailable()) {
+    const result = await realGeocodeAddress(address);
 
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300));
+    return {
+      ...result.location,
+      usedRealGeocoding: !result.isDefault,
+    };
+  }
 
-  // Return PEI coordinates (Charlottetown area)
-  // In production, this would return actual geocoded coordinates
+  // Fallback to PEI defaults
   return {
     latitude: PEI_COORDINATES.latitude,
     longitude: PEI_COORDINATES.longitude,
-    formattedAddress: `${address.street}, ${address.city}, ${address.postalCode}, ${address.country}`,
+    formattedAddress: `${address.street}, ${address.city}, PE ${address.postalCode}, Canada`,
+    usedRealGeocoding: false,
   };
 }
 
@@ -51,33 +42,21 @@ async function geocodeAddress(address: Address): Promise<GeocodedLocation> {
  * Retrieves solar potential data for a PEI location.
  *
  * Uses hardcoded PEI-specific solar data from Natural Resources Canada.
- * TODO: Replace with actual solar irradiance API when API keys are provided:
- * - NREL PVWatts API (https://developer.nrel.gov/docs/solar/pvwatts/)
- * - SolarAnywhere API
- * - Google Project Sunroof API
  *
  * @param address - User-provided address
- * @returns Promise<SolarPotentialResult>
+ * @returns Promise<SolarPotentialResult & { geocodedLocation: GeocodedLocation; usedRealGeocoding: boolean }>
  */
-export async function getLocationSolarPotential(address: Address): Promise<SolarPotentialResult> {
-  const location = await geocodeAddress(address);
-
-  // TODO: Implement actual solar potential API call when API key is available
-  // const apiKey = process.env.SOLAR_API_KEY;
-  // const response = await fetch(
-  //   `https://developer.nrel.gov/api/pvwatts/v8.json?api_key=${apiKey}` +
-  //   `&lat=${location.latitude}&lon=${location.longitude}&system_capacity=4&...`
-  // );
-  // const data = await response.json();
-
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+export async function getLocationSolarPotential(
+  address: Address
+): Promise<SolarPotentialResult & { geocodedLocation: GeocodedLocation; usedRealGeocoding: boolean }> {
+  // Geocode the address
+  const locationResult = await geocodeAddressForSolar(address);
 
   // Use PEI-specific solar data
   const peakSunHours = PEI_SOLAR_DATA.averagePeakSunHours;
   const averageIrradiance = PEI_SOLAR_DATA.annualGHI;
 
-  // Calculate optimal panel count based on a typical 20m² usable roof area
+  // Calculate optimal panel count based on a typical usable roof area
   // This will be refined when combined with actual roof analysis
   const assumedUsableAreaSqM = 25; // Conservative estimate for initial calculation
   const panelsPerSqM = 1 / PEI_INSTALLATION_COSTS.panelAreaSqM;
@@ -94,6 +73,12 @@ export async function getLocationSolarPotential(address: Address): Promise<Solar
     averageIrradianceKWhPerSqM: averageIrradiance,
     optimalPanelCount,
     peakSunHoursPerDay: peakSunHours,
+    geocodedLocation: {
+      latitude: locationResult.latitude,
+      longitude: locationResult.longitude,
+      formattedAddress: locationResult.formattedAddress,
+    },
+    usedRealGeocoding: locationResult.usedRealGeocoding,
   };
 }
 
@@ -153,4 +138,28 @@ export function getDetailedProductionEstimate(systemSizeKW: number): {
     systemLoss: Math.round(systemLoss),
     netProduction: Math.round(netProduction),
   };
+}
+
+/**
+ * Adjust solar potential based on roof orientation
+ *
+ * @param baseProduction - Base annual production in kWh
+ * @param orientation - Roof orientation (north, south, east, west, flat)
+ * @returns Adjusted production in kWh
+ */
+export function adjustForOrientation(
+  baseProduction: number,
+  orientation: 'north' | 'south' | 'east' | 'west' | 'flat'
+): number {
+  // Orientation factors for PEI latitude (46°N)
+  const orientationFactors: Record<string, number> = {
+    south: 1.0, // Optimal
+    flat: 0.92, // Good but less efficient
+    east: 0.85, // Morning sun
+    west: 0.85, // Afternoon sun
+    north: 0.55, // Significant loss
+  };
+
+  const factor = orientationFactors[orientation] || 1.0;
+  return Math.round(baseProduction * factor);
 }

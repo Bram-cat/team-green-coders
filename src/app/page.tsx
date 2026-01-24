@@ -82,6 +82,12 @@ export default function HomePage() {
             roofAnalysis={results.roofAnalysis}
             solarPotential={results.solarPotential}
             onReset={handleReset}
+            aiConfidence={results.aiConfidence}
+            usedAI={results.usedAI}
+            usedRealGeocoding={results.usedRealGeocoding}
+            geocodedLocation={results.geocodedLocation}
+            uploadedImageBase64={results.uploadedImageBase64}
+            aiSummary={results.aiSummary}
           />
         )}
 
