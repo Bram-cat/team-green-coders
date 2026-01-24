@@ -24,69 +24,24 @@ export function ImageGenerationPanel({ imagePrompts, address }: ImageGenerationP
         try {
             console.log(`[Image Generation] Generating ${angle} view...`);
 
-            // Try to generate real image via API
-            let imageUrl: string | null = null;
-            try {
-                const response = await fetch('/api/generate-image', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt.prompt }),
-                });
+            const response = await fetch('/api/generate-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt.prompt }),
+            });
 
-                const data = await response.json();
+            const data = await response.json();
 
-                if (data.success && data.imageUrl) {
-                    imageUrl = data.imageUrl;
-                } else {
-                    console.warn('AI generation response issue:', data.error);
-                }
-            } catch (apiError) {
-                console.warn('API call failed, falling back to SVG:', apiError);
-            }
-
-            if (imageUrl) {
-                setGeneratedImages(prev => ({ ...prev, [angle]: imageUrl }));
+            if (data.success && data.imageUrl) {
+                setGeneratedImages(prev => ({ ...prev, [angle]: data.imageUrl }));
             } else {
-                // Fallback: Create robust SVG placeholder
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay if API was instant fail
-
-                const colors = {
-                    aerial: { bg: '#3b82f6', accent: '#60a5fa', text: 'Aerial View' },
-                    south: { bg: '#10b981', accent: '#34d399', text: 'South View' },
-                    west: { bg: '#f59e0b', accent: '#fbbf24', text: 'West View' }
-                };
-                const theme = colors[angle];
-
-                const svgContent = `
-                    <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <linearGradient id="grad-${angle}" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:${theme.bg};stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:${theme.accent};stop-opacity:1" />
-                            </linearGradient>
-                        </defs>
-                        <rect width="800" height="600" fill="url(#grad-${angle})"/>
-                        <text x="400" y="280" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle" filter="drop-shadow(0px 2px 2px rgba(0,0,0,0.3))">
-                            ${theme.text.toUpperCase()}
-                        </text>
-                        <text x="400" y="340" font-family="Arial, sans-serif" font-size="24" fill="white" text-anchor="middle" opacity="0.9">
-                            Visualization Placeholder
-                        </text>
-                        <text x="400" y="380" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle" opacity="0.8">
-                            (AI generation unavailable)
-                        </text>
-                    </svg>
-                `;
-
-                const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent.trim())}`;
-
-                setGeneratedImages(prev => ({
-                    ...prev,
-                    [angle]: dataUrl
-                }));
+                console.error('AI generation failed:', data.error);
+                // Simple alert for now, could be a toast in a UI library
+                alert(`Image generation failed: ${data.error || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Failed to generate image:', error);
+            alert('Failed to connect to image generation service.');
         } finally {
             setGenerating(prev => ({ ...prev, [angle]: false }));
         }
@@ -120,7 +75,7 @@ export function ImageGenerationPanel({ imagePrompts, address }: ImageGenerationP
             </div>
 
             {/* Image display area */}
-            <div className="bg-gray-50 rounded-lg p-6 min-h-[400px] flex flex-col items-center justify-center">
+            <div className="bg-gray-50 rounded-lg p-6 min-h-[400px] flex flex-col items-center justify-center border border-gray-200">
                 {generatedImages[selectedAngle] ? (
                     <div className="w-full space-y-4">
                         <img

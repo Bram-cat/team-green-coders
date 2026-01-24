@@ -21,9 +21,10 @@ const genAI2 = process.env.GOOGLE_AI_API_KEY_2
   : null;
 
 // Model names - using gemini-2.0-flash-exp as shown in the API dashboard
-const VISION_MODELS = ['gemini-2.0-flash-exp', 'gemini-1.5-flash-002', 'gemini-1.5-flash'];
-const TEXT_MODELS = ['gemini-2.0-flash-exp', 'gemini-1.5-flash-002', 'gemini-1.5-flash'];
-const IMAGE_GEN_MODELS = ['gemini-2.0-flash-exp', 'gemini-1.5-flash-002'];
+// Model names - prioritizing stable and requested models
+const VISION_MODELS = ['gemini-1.5-flash', 'gemini-2.0-flash-exp', 'gemini-1.5-pro'];
+const TEXT_MODELS = ['gemini-1.5-flash', 'gemini-2.0-flash-exp'];
+const IMAGE_GEN_MODELS = ['gemini-2.5-flash-preview-image', 'imagen-3.0-generate-001'];
 
 // Retry configuration
 const MAX_RETRIES = 3;

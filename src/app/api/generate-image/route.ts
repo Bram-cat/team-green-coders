@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini API
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
+// Initialize Gemini API with fallback keys
+const apiKey = process.env.GOOGLE_AI_API_KEY_1 || process.env.GOOGLE_AI_API_KEY_2 || '';
+const genAI = new GoogleGenerativeAI(apiKey);
 
 export async function POST(request: NextRequest) {
     try {
@@ -16,56 +17,44 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        console.log('[Image Generation] Requesting image for prompt:', prompt.substring(0, 50) + '...');
-
-        // Note: As of early 2025, experimental image generation via Gemini API 
-        // might require specific endpoint or model handling.
-        // If the SDK doesn't support it directly, we might need a raw fetch.
-        // For now, attempting to use the model user requested: gemini-2.5-flash-preview-image
-        // If this fails, it means the model isn't publicly available via this API structure yet.
-
-        // Attempting direct fetch to experimental endpoint if SDK fails
-        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
         if (!apiKey) {
-            throw new Error('API Key missing');
+            return NextResponse.json(
+                { success: false, error: 'API Key missing. Server configuration error.' },
+                { status: 500 }
+            );
         }
 
-        // Try standard Imagen/Gemini approach via REST if SDK doesn't have createImages
-        // This is a hypothetical endpoint structure for the preview model
-        // In production, this would be `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent` 
-        // but for images it's often different.
+        console.log('[Image Generation] Requesting image for prompt:', prompt.substring(0, 50) + '...');
 
-        // FALLBACK: Since we cannot guarantee the "gemini-2.5" image capability is live/accessible
-        // without a specific beta enabled key or region, we will simulate the integration 
-        // but provide a clear error message in the return if it fails, allowing the UI to show the specific error.
-
-        // However, the user specifically asked for "gemini-2.5-flash-preview-image".
-        // Let's try to initialize that model.
+        // Try to use the user-requested model "gemini-2.5-flash-preview-image"
         try {
             const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-image' });
 
-            // This is where it gets tricky - standard generateContent returns text/multimodal text.
-            // Image generation usually requires `imagen-3.0-generate-001` or similar.
-            // But let's try the user's requested model with generateContent.
+            // Note: Standard generateContent returns text. If this model supports image output,
+            // it might be via a different method or return base64 in the text.
+            // If the SDK doesn't support direct image result type yet, we check the response.
             const result = await model.generateContent(prompt);
             const response = await result.response;
 
-            // Use text response? Or assume it returns an image link?
-            // Usually image models return a different structure.
+            // Check if response contains image data
+            // This logic assumes the model returns a standard structure or we can extract it.
+            // If "gemini-2.5-flash-preview-image" is text-to-image, it might work differently.
+            console.log('Model response candidates:', response.candidates);
 
-            // If this model is text-to-image, it might send base64 data.
-            console.log('Model response:', response);
+            // If we get here, the model exists and responded.
+            // If it's just text saying "I can't", we should catch that.
+            const text = response.text();
 
-            // If successful but just text, we return error.
+            // Mocking the success if we can't parse real image data yet without the specific new SDK types
+            // Ideally, we would return `data.images[0]` if using Imagen API directly.
+
             return NextResponse.json({
                 success: false,
-                error: 'Model returned text, not image. Image generation requires Imagen model.'
+                error: 'Model accessed but returned text. Currently using text-generation endpoint. Integration requires specific Imagen endpoint.'
             });
 
         } catch (e: any) {
             console.error('Gemini SDK Error:', e);
-
-            // If specific model fails, we can try to return a specialized error
             return NextResponse.json({
                 success: false,
                 error: `Failed to generate image with model gemini-2.5-flash-preview-image: ${e.message}`
