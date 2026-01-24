@@ -41,15 +41,15 @@ export function ImprovementResultsDisplay({
   aiConfidence,
 }: ImprovementResultsDisplayProps) {
   const priorityColors = {
-    high: 'bg-destructive/10 text-destructive border-destructive/20',
-    medium: 'bg-accent/10 text-accent-foreground border-accent/20',
-    low: 'bg-secondary/10 text-secondary-foreground border-secondary/20',
+    high: 'bg-red-50 text-red-900 border-red-200 dark:bg-red-950/30 dark:text-red-200 dark:border-red-800',
+    medium: 'bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-800',
+    low: 'bg-emerald-50 text-emerald-900 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-200 dark:border-emerald-800',
   };
 
   const priorityIcons = {
-    high: '🔴',
-    medium: '🟡',
-    low: '🟢',
+    high: '�',
+    medium: '⚡',
+    low: '✅',
   };
 
   return (
