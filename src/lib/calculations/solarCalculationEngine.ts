@@ -83,18 +83,40 @@ export function calculateSolarSystem(inputs: CalculationInputs): {
 
 function calculateSystemSpecs(inputs: CalculationInputs): SolarSystemSpecs {
     // Step 1: Calculate usable roof area (after fire code setbacks and obstacles)
-    // Each edge loses 0.9m setback, so rectangular roof loses ~2-4 m² typically
     const usableAreaSqM = inputs.roofAreaSqM * (inputs.usablePercentage / 100);
 
     // Step 2: Calculate maximum panels that physically fit
-    // Each panel needs 1.7 m², plus spacing (~20% extra for mounting and maintenance)
+    // Based on industry research: Each panel = 1.7 m² + 20% spacing = 2.04 m² per panel
+    // Source: https://shopsolarkits.com/blogs/learning-center/solar-panel-square-footage-calculator
     const areaPerPanelWithSpacing = PANEL_AREA * 1.2;
     const maxPanelsFit = Math.floor(usableAreaSqM / areaPerPanelWithSpacing);
 
-    // Step 3: Limit to realistic residential range
-    // PEI data: median 7.2 kW (18 panels), 80th percentile 11 kW (27 panels)
-    // Absolute max for residential: 20 panels (8 kW system)
-    const panelCount = Math.min(maxPanelsFit, 20);
+    // Step 3: Apply realistic residential limits based on usable roof area
+    // Based on web research and PEI residential data:
+    // - Small homes (30-50 m² usable): 8-12 panels (3.2-4.8 kW)
+    // - Medium homes (50-75 m² usable): 12-18 panels (4.8-7.2 kW)
+    // - Large homes (75-100 m² usable): 18-25 panels (7.2-10 kW)
+    // - Very large (100+ m² usable): up to 30 panels max (12 kW)
+    // PEI median: 18 panels (7.2 kW), 80th percentile: 27 panels (11 kW)
+
+    let recommendedPanelCount: number;
+
+    if (usableAreaSqM < 50) {
+        // Small roof: Cap at 12 panels (4.8 kW)
+        recommendedPanelCount = Math.min(maxPanelsFit, 12);
+    } else if (usableAreaSqM < 75) {
+        // Medium roof: Cap at 18 panels (7.2 kW) - PEI median
+        recommendedPanelCount = Math.min(maxPanelsFit, 18);
+    } else if (usableAreaSqM < 100) {
+        // Large roof: Cap at 25 panels (10 kW)
+        recommendedPanelCount = Math.min(maxPanelsFit, 25);
+    } else {
+        // Very large roof: Cap at 30 panels (12 kW) - approaching commercial
+        recommendedPanelCount = Math.min(maxPanelsFit, 30);
+    }
+
+    // Ensure minimum of 8 panels (3.2 kW) for viability
+    const panelCount = Math.max(8, recommendedPanelCount);
 
     // Step 4: Calculate system size in kW
     const systemSizeKW = (panelCount * PANEL_WATTAGE) / 1000;
@@ -182,14 +204,15 @@ function validateInputs(inputs: CalculationInputs): CalculationInputs {
 
 function validateOutputs(specs: SolarSystemSpecs, financials: FinancialResults): void {
     // Ensure all values are positive and realistic
-    if (specs.panelCount <= 0 || specs.panelCount > 25) {
-        throw new Error(`Invalid panel count: ${specs.panelCount}. Expected 1-25 panels.`);
+    // Residential range: 8-30 panels (3.2-12 kW)
+    if (specs.panelCount < 8 || specs.panelCount > 30) {
+        throw new Error(`Invalid panel count: ${specs.panelCount}. Expected 8-30 panels.`);
     }
-    if (specs.systemSizeKW <= 0 || specs.systemSizeKW > 10) {
-        throw new Error(`Invalid system size: ${specs.systemSizeKW} kW. Expected 0.4-10 kW.`);
+    if (specs.systemSizeKW <= 0 || specs.systemSizeKW > 12) {
+        throw new Error(`Invalid system size: ${specs.systemSizeKW} kW. Expected 3.2-12 kW.`);
     }
-    if (specs.annualProductionKWh <= 0 || specs.annualProductionKWh > 15000) {
-        throw new Error(`Invalid production: ${specs.annualProductionKWh} kWh. Expected 500-15,000 kWh.`);
+    if (specs.annualProductionKWh <= 0 || specs.annualProductionKWh > 18000) {
+        throw new Error(`Invalid production: ${specs.annualProductionKWh} kWh. Expected 4,500-18,000 kWh.`);
     }
     if (financials.systemCost <= 0) throw new Error('Invalid system cost');
     if (financials.annualSavings <= 0) throw new Error('Invalid savings');
