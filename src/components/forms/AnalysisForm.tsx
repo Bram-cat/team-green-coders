@@ -21,6 +21,7 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
     postalCode: '',
     country: 'Canada', // Default to Canada for PEI
   });
+  const [monthlyBill, setMonthlyBill] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -52,6 +53,9 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
       formData.append('city', address.city);
       formData.append('postalCode', address.postalCode);
       formData.append('country', address.country);
+      if (monthlyBill) {
+        formData.append('monthlyBill', monthlyBill);
+      }
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
@@ -126,6 +130,25 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
           placeholder="Canada"
           error={errors.country}
         />
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900">Energy Profile (Optional)</h3>
+        <p className="text-sm text-gray-500 -mt-2">
+          Help us calculate your exact savings
+        </p>
+
+        <div className="relative">
+          <Input
+            label="Average Monthly Electricity Bill ($)"
+            value={monthlyBill}
+            onChange={(e) => setMonthlyBill(e.target.value)}
+            placeholder="150"
+            type="number"
+            min="0"
+          />
+          <div className="absolute right-3 top-9 text-gray-500 text-sm">CAD</div>
+        </div>
       </div>
 
       <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-700">

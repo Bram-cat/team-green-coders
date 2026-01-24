@@ -38,13 +38,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
       );
     }
 
-    // Extract and validate address
+    // Extract and validate address and monthly bill
     const address: Address = {
       street: formData.get('street') as string || '',
       city: formData.get('city') as string || '',
       postalCode: formData.get('postalCode') as string || '',
       country: formData.get('country') as string || '',
     };
+
+    // Extract monthly bill
+    const monthlyBillStr = formData.get('monthlyBill') as string | null;
+    const monthlyBill = monthlyBillStr ? parseFloat(monthlyBillStr) : undefined;
 
     if (!address.street || !address.city || !address.postalCode || !address.country) {
       return NextResponse.json(
@@ -84,8 +88,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
       peakSunHoursPerDay: solarPotentialResult.peakSunHoursPerDay,
     };
 
-    // Calculate recommendation
-    const recommendation = calculateRecommendation(roofAnalysis, solarPotential);
+    // Calculate recommendation using the new engine via calculateRecommendation
+    const recommendation = calculateRecommendation(
+      roofAnalysis,
+      solarPotential,
+      monthlyBill
+    );
 
     // Generate AI summary if financials are available
     let aiSummary: string | undefined;

@@ -1,18 +1,13 @@
 import { RoofAnalysisResult, SolarPotentialResult, SolarRecommendation, Suggestion } from '@/types/analysis';
-import { calculateFinancials, formatCurrency } from '@/lib/calculations/financialCalculations';
-import {
-  PEI_SOLAR_DATA,
-  PEI_INSTALLATION_COSTS,
-  PEI_ELECTRICITY_RATES,
-  PEI_COMBINED_EFFICIENCY,
-} from '@/lib/data/peiSolarData';
+import { calculateSolarSystem, formatCurrency } from '@/lib/calculations/solarCalculationEngine';
+import { PEI_ELECTRICITY_RATES, PEI_SOLAR_DATA } from '@/lib/data/peiSolarData';
 
-const PANEL_WATTAGE = PEI_INSTALLATION_COSTS.panelWattage; // 400W per panel
-const PANEL_AREA_SQM = PEI_INSTALLATION_COSTS.panelAreaSqM; // ~1.7 m² per panel
+const OPTIMAL_TILT_ANGLE = 44; // PEI optimal angle
 
 export function calculateRecommendation(
   roofAnalysis: RoofAnalysisResult,
-  solarPotential: SolarPotentialResult
+  solarPotential: SolarPotentialResult,
+  monthlyBill?: number
 ): SolarRecommendation {
   // Calculate suitability score (0-100)
   let score = 100;
@@ -26,42 +21,67 @@ export function calculateRecommendation(
   score -= complexityDeductions[roofAnalysis.complexity];
 
   // Deduct for steep or flat pitch (optimal is 30-45 degrees for PEI latitude)
-  const optimalPitch = PEI_SOLAR_DATA.optimalTiltAngle; // 44 degrees for PEI
-  const pitchDeviation = Math.abs(roofAnalysis.roofPitchDegrees - optimalPitch);
+  const pitchDeviation = Math.abs(roofAnalysis.roofPitchDegrees - OPTIMAL_TILT_ANGLE);
   score -= Math.min(pitchDeviation * 0.5, 15);
 
-  // Bonus for high irradiance (PEI baseline is ~1150, so this may not apply often)
+  // Bonus for high irradiance
   if (solarPotential.averageIrradianceKWhPerSqM > 1200) {
     score += 3;
   }
 
   score = Math.max(0, Math.min(100, Math.round(score)));
 
-  // Calculate system size
-  const usableArea = roofAnalysis.roofAreaSqMeters * (roofAnalysis.usableAreaPercentage / 100);
-  const maxPanels = Math.floor(usableArea / PANEL_AREA_SQM);
-  const recommendedPanels = Math.min(maxPanels, solarPotential.optimalPanelCount);
-  const systemSizeKW = (recommendedPanels * PANEL_WATTAGE) / 1000;
+  // Use the new robust calculation engine
+  const { specs, financials: calculatedFinancials } = calculateSolarSystem({
+    roofAreaSqM: roofAnalysis.roofAreaSqMeters,
+    usablePercentage: roofAnalysis.usableAreaPercentage,
+    peakSunHoursPerDay: solarPotential.peakSunHoursPerDay,
+    monthlyElectricityBill: monthlyBill
+  });
 
-  // Calculate annual production using PEI climate factors
-  // Formula: System Size (kW) × Peak Sun Hours × 365 days × Combined Efficiency
-  const estimatedAnnualProductionKWh = Math.round(
-    systemSizeKW * solarPotential.peakSunHoursPerDay * 365 * PEI_COMBINED_EFFICIENCY
-  );
-
-  // Calculate financials
-  const financials = calculateFinancials(systemSizeKW, estimatedAnnualProductionKWh);
+  // Map to the existing FinancialAnalysis type to maintain compatibility
+  const financials = {
+    estimatedSystemCost: calculatedFinancials.systemCost,
+    costPerWatt: 3.00, // Standardized for PEI
+    annualElectricitySavings: calculatedFinancials.annualSavings,
+    monthlyAverageSavings: calculatedFinancials.monthlySavings,
+    simplePaybackYears: calculatedFinancials.paybackYears,
+    twentyFiveYearSavings: calculatedFinancials.twentyFiveYearSavings,
+    returnOnInvestment: calculatedFinancials.roi,
+    firstYearProduction: specs.annualProductionKWh,
+    lifetimeProductionKWh: specs.annualProductionKWh * 25 * 0.9, // Estimate
+    availableIncentives: [
+      {
+        name: 'Canada Greener Homes Loan',
+        available: true,
+        description: 'Interest-free loan up to $40,000',
+        potentialValue: Math.min(calculatedFinancials.systemCost, 40000),
+        url: 'https://natural-resources.canada.ca/energy-efficiency/homes/canada-greener-homes-loan/24376'
+      },
+      {
+        name: 'Net Metering',
+        available: true,
+        description: 'Credit for excess energy',
+        url: 'https://www.maritimeelectric.com/save-energy/net-metering'
+      }
+    ],
+    annualCO2OffsetKg: Math.round(specs.annualProductionKWh * 0.4), // 0.4 kg/kWh
+    lifetimeCO2OffsetKg: Math.round(specs.annualProductionKWh * 25 * 0.4),
+    equivalentTreesPlanted: Math.round(specs.annualProductionKWh * 0.4 / 21),
+    electricityRate: PEI_ELECTRICITY_RATES.residentialRate,
+    utilityName: 'Maritime Electric'
+  };
 
   // Generate layout suggestion
-  const layoutSuggestion = generateLayoutSuggestion(roofAnalysis, recommendedPanels);
+  const layoutSuggestion = generateLayoutSuggestion(roofAnalysis, specs.panelCount);
 
   // Generate plain-language explanation with PEI context
   const explanation = generateExplanation(
     score,
     roofAnalysis,
     solarPotential,
-    systemSizeKW,
-    financials.annualElectricitySavings
+    specs.systemSizeKW,
+    calculatedFinancials.annualSavings
   );
 
   // Generate suggestions including PEI-specific ones
@@ -69,9 +89,9 @@ export function calculateRecommendation(
 
   return {
     suitabilityScore: score,
-    systemSizeKW: Math.round(systemSizeKW * 10) / 10,
-    panelCount: recommendedPanels,
-    estimatedAnnualProductionKWh,
+    systemSizeKW: specs.systemSizeKW,
+    panelCount: specs.panelCount,
+    estimatedAnnualProductionKWh: specs.annualProductionKWh,
     layoutSuggestion,
     explanation,
     suggestions,
@@ -144,7 +164,7 @@ function generateSuggestions(roof: RoofAnalysisResult): Suggestion[] {
   }
 
   // Pitch/orientation suggestions
-  if (Math.abs(roof.roofPitchDegrees - PEI_SOLAR_DATA.optimalTiltAngle) > 15) {
+  if (Math.abs(roof.roofPitchDegrees - OPTIMAL_TILT_ANGLE) > 15) {
     suggestions.push({
       category: 'orientation',
       title: 'Consider tilt brackets',
@@ -159,9 +179,8 @@ function generateSuggestions(roof: RoofAnalysisResult): Suggestion[] {
     title: 'Maximize south-facing exposure',
     description: 'Prioritize panel placement on south-facing roof sections for maximum annual energy production in PEI. East or west-facing panels produce about 15-20% less energy.',
     priority: 'medium',
+    // PEI-specific: Net metering setup
   });
-
-  // PEI-specific: Net metering setup
   suggestions.push({
     category: 'equipment',
     title: 'Set up net metering with Maritime Electric',

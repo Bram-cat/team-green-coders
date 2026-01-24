@@ -37,7 +37,7 @@ export async function fetchNASAPowerData(
   longitude: number
 ): Promise<NASAPowerData> {
   const cacheKey = `${latitude.toFixed(2)},${longitude.toFixed(2)}`;
-  
+
   // Check cache first
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -80,14 +80,24 @@ export async function fetchNASAPowerData(
 
     // Calculate monthly averages
     const monthlyGHI = calculateMonthlyAverages(irradianceData);
-    
-    // Calculate annual GHI (sum of daily values)
-    const annualGHI = Math.round(
-      Object.values(irradianceData).reduce((sum, val) => sum + val, 0)
-    );
+
+    // Calculate annual GHI (sum of daily values, excluding errors)
+    // NASA returns -999 for missing data
+    const validValues = Object.values(irradianceData).filter(val => val >= 0);
+
+    // If no valid data, throw error to trigger fallback
+    if (validValues.length === 0) {
+      throw new Error('No valid irradiance data received from NASA API');
+    }
+
+    // Calculate annual sum logic - handle incomplete years by averaging and projecting
+    const averageDaily = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+    const annualGHI = Math.round(averageDaily * 365);
 
     // Calculate average peak sun hours (annual GHI / 365)
-    const averagePeakSunHours = Number((annualGHI / 365).toFixed(2));
+    // Ensure it's within realistic bounds (2-6 hours/day for PEI)
+    let averagePeakSunHours = Number((annualGHI / 365).toFixed(2));
+    averagePeakSunHours = Math.max(2.5, Math.min(averagePeakSunHours, 5.5));
 
     // Calculate photovoltaic potential (kWh/kWp/year)
     // PV potential = Annual GHI * System efficiency (typically 0.75-0.85)
@@ -127,12 +137,13 @@ function calculateMonthlyAverages(dailyData: Record<string, number>): number[] {
   const monthlyCounts = new Array(12).fill(0);
 
   for (const [dateStr, value] of Object.entries(dailyData)) {
+    if (value < 0) continue; // Skip error values
     const month = parseInt(dateStr.substring(4, 6)) - 1; // 0-indexed
     monthlyTotals[month] += value;
     monthlyCounts[month]++;
   }
 
-  return monthlyTotals.map((total, i) => 
+  return monthlyTotals.map((total, i) =>
     monthlyCounts[i] > 0 ? Number((total / monthlyCounts[i]).toFixed(2)) : 0
   );
 }
