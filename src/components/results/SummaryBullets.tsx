@@ -57,26 +57,28 @@ export function SummaryBullets({
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-8">
+      <div className="grid grid-cols-2 gap-6">
         {items.map((item) => (
-          <div key={item.label} className={`${item.color} rounded-xl p-4`}>
-            <div className="flex items-center gap-2 mb-2">
-              {item.icon}
-              <span className="text-sm font-medium opacity-80">{item.label}</span>
+          <div key={item.label} className="group/item">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white scale-90 group-hover/item:scale-100 transition-transform">
+                {item.icon}
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-60 text-white">{item.label}</span>
             </div>
-            <div className="text-xl font-bold">{item.value}</div>
+            <div className="text-2xl font-black text-white tracking-tighter ml-11">{item.value}</div>
           </div>
         ))}
       </div>
-      <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl border border-blue-100">
-        <div className="flex items-start gap-3">
-          <svg className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-          </svg>
+      <div className="mt-8 p-6 bg-white/10 backdrop-blur-sm rounded-[2rem] border border-white/20">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white flex-shrink-0 animate-pulse">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+          </div>
           <div>
-            <p className="font-medium text-gray-900 mb-1">Layout Recommendation</p>
-            <p className="text-sm text-gray-600">{layoutSuggestion}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-1">Architectural Core</p>
+            <p className="text-sm font-bold text-white leading-relaxed">{layoutSuggestion}</p>
           </div>
         </div>
       </div>

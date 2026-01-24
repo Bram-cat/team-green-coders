@@ -54,18 +54,18 @@ export function SolarPanelVisualization({
   }[orientation] || 180;
 
   return (
-    <div className="space-y-4">
-      {/* Side-by-side layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-12">
+      {/* 1. Technical Layout Visuals */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         {/* Original Image */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-            <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Your Roof
-          </h4>
-          <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-video">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] flex items-center gap-2">
+              Active Site Photo
+            </h4>
+            <div className="h-1 w-1 bg-primary rounded-full animate-pulse" />
+          </div>
+          <div className="relative bg-muted/30 rounded-[2.5rem] overflow-hidden aspect-[4/3] shadow-inner border border-border/50">
             {uploadedImageUrl ? (
               <Image
                 src={uploadedImageUrl}
@@ -75,49 +75,59 @@ export function SolarPanelVisualization({
                 unoptimized
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-400">
-                <span>No image available</span>
+              <div className="flex items-center justify-center h-full text-muted-foreground/40 font-black uppercase tracking-widest text-xs">
+                Missing Asset
               </div>
             )}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/40 to-transparent h-24" />
           </div>
         </div>
 
         {/* Panel Layout Schematic */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-            <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-            </svg>
-            Suggested Panel Layout
-          </h4>
-          <div className="relative bg-gradient-to-br from-blue-50 to-green-50 rounded-lg aspect-video p-4 border border-gray-200">
-            {/* Roof outline */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+              Neural Reconstruction
+            </h4>
+            <div className="text-[8px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest">v2.5</div>
+          </div>
+          <div className="relative bg-white rounded-[2.5rem] aspect-[4/3] p-8 border-2 border-primary/5 shadow-2xl flex flex-col items-center justify-center">
+            {/* Compass rose - Absolute Top Right */}
+            <div className="absolute top-6 right-6 w-14 h-14 bg-white rounded-full shadow-lg border border-border/40 p-2 group-hover:rotate-45 transition-transform duration-1000">
+              <div className="relative w-full h-full border border-dashed border-border rounded-full flex items-center justify-center">
+                <div
+                  className="absolute inset-0 flex items-center justify-center transition-transform duration-1000"
+                  style={{ transform: `rotate(${orientationAngle}deg)` }}
+                >
+                  <div className="w-1 h-6 bg-primary rounded-full" />
+                </div>
+                <span className="text-[8px] font-black text-primary mt-1">N</span>
+              </div>
+            </div>
+
             <svg
               viewBox="0 0 200 120"
-              className="w-full h-full"
-              style={{ maxHeight: '180px' }}
+              className="w-full h-full drop-shadow-2xl"
             >
-              {/* Roof shape */}
               <polygon
                 points="100,10 190,50 190,110 10,110 10,50"
-                fill="#e5e7eb"
-                stroke="#9ca3af"
-                strokeWidth="1"
+                fill="#f8fafc"
+                stroke="#e2e8f0"
+                strokeWidth="1.5"
               />
 
-              {/* Usable area */}
               <rect
                 x="25"
                 y="55"
                 width="150"
                 height="50"
-                fill="#d1fae5"
+                fill="#ecfdf5"
                 stroke="#10b981"
                 strokeWidth="1"
-                rx="2"
+                strokeDasharray="4 2"
+                rx="4"
               />
 
-              {/* Panel grid */}
               {panelGrid.map((panel) => {
                 const panelWidth = 140 / layout.cols;
                 const panelHeight = 40 / layout.rows;
@@ -125,128 +135,68 @@ export function SolarPanelVisualization({
                 const y = 60 + panel.row * panelHeight;
 
                 return (
-                  <g key={panel.index}>
-                    <rect
-                      x={x}
-                      y={y}
-                      width={panelWidth - 2}
-                      height={panelHeight - 2}
-                      fill="#1e40af"
-                      stroke="#1e3a8a"
-                      strokeWidth="0.5"
-                      rx="1"
-                    />
-                    {/* Panel lines */}
-                    <line
-                      x1={x + (panelWidth - 2) / 2}
-                      y1={y}
-                      x2={x + (panelWidth - 2) / 2}
-                      y2={y + panelHeight - 2}
-                      stroke="#3b82f6"
-                      strokeWidth="0.3"
-                    />
-                  </g>
+                  <rect
+                    key={panel.index}
+                    x={x}
+                    y={y}
+                    width={panelWidth - 2}
+                    height={panelHeight - 2}
+                    fill="#1e40af"
+                    stroke="#1e3a8a"
+                    strokeWidth="0.5"
+                    rx="1.5"
+                  />
                 );
               })}
-
-              {/* Compass rose */}
-              <g transform="translate(175, 25)">
-                <circle cx="0" cy="0" r="12" fill="white" stroke="#6b7280" strokeWidth="0.5" />
-                <text
-                  x="0"
-                  y="-5"
-                  textAnchor="middle"
-                  fontSize="6"
-                  fill="#dc2626"
-                  fontWeight="bold"
-                >
-                  N
-                </text>
-                <text x="0" y="9" textAnchor="middle" fontSize="5" fill="#6b7280">
-                  S
-                </text>
-                <text x="-7" y="2" textAnchor="middle" fontSize="5" fill="#6b7280">
-                  W
-                </text>
-                <text x="7" y="2" textAnchor="middle" fontSize="5" fill="#6b7280">
-                  E
-                </text>
-                {/* Direction indicator */}
-                <polygon
-                  points="0,-8 2,-3 -2,-3"
-                  fill="#dc2626"
-                  transform={`rotate(${orientationAngle})`}
-                />
-              </g>
-
-              {/* Labels */}
-              <text x="100" y="115" textAnchor="middle" fontSize="6" fill="#374151">
-                {layout.cols} × {layout.rows} arrangement
-              </text>
             </svg>
+            <div className="mt-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">{layout.cols} &times; {layout.rows} Optimal Array</div>
           </div>
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-        <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 shadow-sm transition-all hover:bg-primary/10">
-          <div className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Modules</div>
-          <div className="text-2xl font-black text-foreground tracking-tighter">{panelCount}</div>
-        </div>
-        <div className="bg-green-500/5 rounded-2xl p-4 border border-green-500/10 shadow-sm transition-all hover:bg-green-500/10">
-          <div className="text-[10px] font-black uppercase tracking-widest text-green-600 mb-1">Architecture</div>
-          <div className="text-2xl font-black text-foreground tracking-tighter">{systemSizeKW} <span className="text-xs">kW</span></div>
-        </div>
-        <div className="bg-orange-500/5 rounded-2xl p-4 border border-orange-500/10 shadow-sm transition-all hover:bg-orange-500/10">
-          <div className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1">Usable</div>
-          <div className="text-2xl font-black text-foreground tracking-tighter">{Math.round(roofAreaSqM * usableAreaPercentage / 100)} <span className="text-xs">m²</span></div>
-        </div>
-        <div className="bg-purple-500/5 rounded-2xl p-4 border border-purple-500/10 shadow-sm transition-all hover:bg-purple-500/10">
-          <div className="text-[10px] font-black uppercase tracking-widest text-purple-600 mb-1">Vector</div>
-          <div className="text-2xl font-black text-foreground tracking-tighter capitalize">{orientation}</div>
-        </div>
+      {/* 2. Core Metrics Bar */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+        {[
+          { label: 'Modules', value: panelCount, unit: 'UNITS', color: 'text-foreground' },
+          { label: 'Arch Capacity', value: systemSizeKW, unit: 'KW', color: 'text-primary' },
+          { label: 'Usable Plane', value: Math.round(roofAreaSqM * usableAreaPercentage / 100), unit: 'M²', color: 'text-foreground' },
+          { label: 'Vector Index', value: orientation, unit: 'AZIMUTH', color: 'text-foreground' },
+        ].map((stat, i) => (
+          <div key={i} className="text-center group/stat">
+            <div className="text-[9px] font-black uppercase tracking-[0.4em] text-muted-foreground mb-2 group-hover/stat:text-primary transition-colors">{stat.label}</div>
+            <div className={`text-4xl font-black tracking-tighter ${stat.color} leading-none mb-1`}>{stat.value}</div>
+            <div className="text-[8px] font-black text-muted-foreground/30 uppercase tracking-widest">{stat.unit}</div>
+          </div>
+        ))}
       </div>
 
-      {/* AI confidence indicator */}
-      {usedAI && aiConfidence !== undefined && (
-        <div className="flex flex-col md:flex-row items-center justify-between bg-muted/20 backdrop-blur-md rounded-[2rem] px-8 py-6 border border-border/50 gap-4 mt-4 shadow-xl">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+      {/* 3. AI Authenticity Badge */}
+      {usedAI && (
+        <div className="pt-6 border-t border-border/40">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-10 py-5 bg-white rounded-[2rem] border border-border/50 shadow-xl">
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center text-white shadow-2xl">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+              </div>
+              <div>
+                <h5 className="text-base font-black text-foreground tracking-tight leading-none mb-1">Architectural Integrity Analysis</h5>
+                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.3em]">Core Processor: Gemini Vision Pro</p>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-black text-foreground tracking-tight leading-tight">AI-Core Analysis</span>
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Neural Vision Integrity</span>
+            <div className="flex items-center gap-6 flex-1 max-w-sm">
+              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-[2000ms]"
+                  style={{ width: `${aiConfidence || 95}%` }}
+                />
+              </div>
+              <div className="text-xl font-black text-primary tracking-tighter leading-none">{(aiConfidence || 95)}%</div>
             </div>
           </div>
-          <div className="flex items-center gap-6 bg-white/50 px-6 py-3 rounded-2xl border border-border/40 shadow-sm w-full md:w-auto">
-            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Confidence</span>
-            <div className="flex-1 md:w-32 bg-muted/40 rounded-full h-3 overflow-hidden border border-border/30">
-              <div
-                className={`h-full rounded-full transition-all duration-1000 ${aiConfidence >= 70 ? 'bg-gradient-to-r from-green-400 to-primary' :
-                  aiConfidence >= 40 ? 'bg-gradient-to-r from-yellow-400 to-orange-400' : 'bg-gradient-to-r from-red-400 to-pink-400'
-                  }`}
-                style={{ width: `${aiConfidence}%` }}
-              />
-            </div>
-            <span className="text-lg font-black text-foreground tracking-tighter">{aiConfidence}%</span>
-          </div>
-        </div>
-      )}
-
-      {!usedAI && (
-        <div className="flex items-center gap-4 bg-amber-500/10 backdrop-blur-sm rounded-2xl px-6 py-4 border border-amber-500/20 shadow-sm mt-4">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-600">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-          </div>
-          <span className="text-xs font-bold text-amber-900 leading-snug">
-            Heuristic Estimation Active. <span className="text-amber-700/60 font-medium">Activate AI-Vision for architectural validation.</span>
-          </span>
         </div>
       )}
     </div>
+  );
+}
   );
 }

@@ -38,130 +38,124 @@ export function ResultsDisplay({
   const displayExplanation = aiSummary || recommendation.explanation;
 
   return (
-    <div className="space-y-12 py-10 animate-in pb-32">
-      {/* Header Info */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-4 border-b-2 border-dashed border-border/50">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
-            Report Engine v2.0
+    <div className="animate-in pb-32 max-w-6xl mx-auto space-y-24">
+      {/* 1. HERO - Header & Suitability */}
+      <section className="space-y-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 pb-10 border-b border-border/50">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.3em] border border-primary/20">
+              Architectural Audit v3
+            </div>
+            <h1 className="text-6xl md:text-7xl font-black tracking-tighter text-foreground leading-none">
+              Analysis <span className="text-primary">Ready</span>
+            </h1>
           </div>
-          <h1 className="text-5xl font-black tracking-tighter text-foreground italic">Analysis <span className="text-primary">Complete</span></h1>
-          <p className="text-muted-foreground font-bold tracking-tight uppercase text-xs opacity-60">Architectural & Solar Potential Assessment</p>
-        </div>
-        {geocodedLocation && usedRealGeocoding && (
-          <div className="flex items-center gap-4 px-6 py-3 bg-white shadow-xl rounded-[2rem] border border-border/50 group hover:border-primary/30 transition-all">
-            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:rotate-12 transition-transform">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Site Location</span>
-              <span className="text-sm font-black text-foreground tracking-tight line-clamp-1">{geocodedLocation.formattedAddress}</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 1. SUITABILITY SCORE - HIGH IMPACT TOP SECTION */}
-      <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-white relative group">
-        <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:scale-110 transition-transform duration-[2000ms]">
-          <svg className="w-64 h-64 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 7V3L4 14h7v7l9-11h-7z" /></svg>
-        </div>
-        <CardContent className="p-12 relative z-10">
-          <SuitabilityScore
-            score={recommendation.suitabilityScore}
-            explanation={displayExplanation}
-          />
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-        {/* 2. VISION MAPPING - SPAN 7 UNITS */}
-        <div className="xl:col-span-7 space-y-10">
-          <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-white h-full">
-            <div className="bg-primary/5 px-10 py-8 border-b border-border/40 flex items-center justify-between">
-              <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase italic">
-                Vision <span className="text-primary">Mapping</span>
-              </h2>
-              <div className="flex items-center gap-3 px-4 py-2 bg-white rounded-full shadow-sm border border-border/50">
-                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-[10px] font-black tracking-[0.2em] text-primary uppercase">Active Schematic</span>
+          {geocodedLocation && usedRealGeocoding && (
+            <div className="flex items-center gap-4 bg-white p-5 rounded-[2.5rem] shadow-2xl border border-border/50 max-w-sm">
+              <div className="w-14 h-14 rounded-3xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Site Index</span>
+                <span className="text-base font-black text-foreground tracking-tight truncate leading-tight">{geocodedLocation.formattedAddress}</span>
               </div>
             </div>
-            <CardContent className="p-10">
-              <SolarPanelVisualization
-                uploadedImageUrl={uploadedImageBase64}
-                panelCount={recommendation.panelCount}
-                roofAreaSqM={roofAnalysis.roofAreaSqMeters}
-                usableAreaPercentage={roofAnalysis.usableAreaPercentage}
-                systemSizeKW={recommendation.systemSizeKW}
-                aiConfidence={aiConfidence}
-                usedAI={usedAI}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 3. METRICS & FINANCIALS - SPAN 5 UNITS */}
-        <div className="xl:col-span-5 space-y-10 flex flex-col">
-          {/* Key Metrics / Quick Stats */}
-          <Card className="border-none shadow-2xl rounded-[3rem] bg-primary text-primary-foreground p-1 animate-in">
-            <CardContent className="p-8 space-y-8">
-              <div className="flex items-center gap-4 border-b border-primary-foreground/20 pb-6">
-                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                </div>
-                <h2 className="text-xl font-black uppercase tracking-tighter italic">Technical Context</h2>
-              </div>
-              <SummaryBullets
-                systemSizeKW={recommendation.systemSizeKW}
-                panelCount={recommendation.panelCount}
-                annualProductionKWh={recommendation.estimatedAnnualProductionKWh}
-                roofArea={Math.round(roofAnalysis.roofAreaSqMeters * (roofAnalysis.usableAreaPercentage / 100))}
-                layoutSuggestion={recommendation.layoutSuggestion}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Financial Analysis */}
-          {recommendation.financials && (
-            <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-white flex-1 min-h-[400px]">
-              <div className="bg-accent/5 px-8 py-6 border-b border-border/40 flex items-center justify-between">
-                <h2 className="text-xl font-black text-foreground tracking-tight uppercase italic">Yield Analysis</h2>
-                <span className="text-[9px] font-black text-accent bg-accent/10 px-3 py-1 rounded-full tracking-widest border border-accent/20">PEI CORE</span>
-              </div>
-              <CardContent className="p-8">
-                <FinancialSummary financials={recommendation.financials} />
-              </CardContent>
-            </Card>
           )}
         </div>
-      </div>
 
-      {/* 4. STRATEGIC INSIGHTS - FULL WIDTH IMPACT SECTION */}
-      <section className="space-y-8">
-        <div className="flex items-center gap-6">
-          <div className="h-0.5 flex-1 bg-border/50" />
-          <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase italic flex items-center gap-4">
-            <span className="text-primary italic">Strategic</span> Roadmap
+        <SuitabilityScore
+          score={recommendation.suitabilityScore}
+          explanation={displayExplanation}
+        />
+      </section>
+
+      {/* 2. THE VISION - Active Schematic */}
+      <section className="space-y-10 group">
+        <div className="flex items-center gap-8">
+          <h2 className="text-4xl font-black text-foreground tracking-tighter uppercase italic leading-none whitespace-nowrap">
+            Vision <span className="text-primary italic">Mapping</span>
           </h2>
-          <div className="h-0.5 flex-1 bg-border/50" />
+          <div className="h-0.5 w-full bg-border/40" />
+          <div className="flex items-center gap-3 px-5 py-2 bg-white rounded-full shadow-xl border border-border/50 text-primary">
+            <div className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
+            <span className="text-xs font-black tracking-[0.2em] uppercase">Active Simulation</span>
+          </div>
         </div>
 
-        <div className="max-w-5xl mx-auto">
-          <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-muted/10">
-            <CardContent className="p-12">
-              <SuggestionsSection suggestions={recommendation.suggestions} />
-            </CardContent>
-          </Card>
+        <div className="bg-white rounded-[4rem] p-10 md:p-16 shadow-2xl border border-border/30 relative overflow-hidden transition-all duration-700 hover:shadow-primary/5">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 blur-[120px] -mr-48 -mt-48 transition-all group-hover:bg-primary/10" />
+          <SolarPanelVisualization
+            uploadedImageUrl={uploadedImageBase64}
+            panelCount={recommendation.panelCount}
+            roofAreaSqM={roofAnalysis.roofAreaSqMeters}
+            usableAreaPercentage={roofAnalysis.usableAreaPercentage}
+            systemSizeKW={recommendation.systemSizeKW}
+            aiConfidence={aiConfidence}
+            usedAI={usedAI}
+          />
         </div>
       </section>
 
-      {/* Reset Button - Full Width Centered */}
-      <div className="max-w-2xl mx-auto pt-8">
-        <Button variant="outline" onClick={onReset} className="w-full h-20 rounded-[2rem] font-black text-xl hover:bg-destructive hover:text-white hover:border-destructive transition-all group shadow-2xl bg-white/50 backdrop-blur-sm border-2">
-          <svg className="mr-4 w-6 h-6 group-hover:rotate-180 transition-transform duration-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-          Initialize New Site Analysis
+      {/* 3. PERFORMANCE DATA - Financials & Tech */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="space-y-10">
+          <div className="flex flex-col gap-4">
+            <h3 className="text-3xl font-black tracking-tighter uppercase italic text-foreground">Economic <span className="text-accent">Yield</span></h3>
+            <p className="text-muted-foreground font-medium text-lg leading-snug">Projected financial performance based on Atlantic Canada baseline rates ($0.174/kWh).</p>
+          </div>
+          {recommendation.financials && (
+            <div className="bg-white rounded-[3.5rem] p-10 shadow-2xl border border-border/40 h-full">
+              <FinancialSummary financials={recommendation.financials} />
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-10">
+          <div className="flex flex-col gap-4">
+            <h3 className="text-3xl font-black tracking-tighter uppercase italic text-foreground text-right md:text-left">Technical <span className="text-primary">Specs</span></h3>
+            <p className="text-muted-foreground font-medium text-lg leading-snug">High-precision architecture results calculated using site-specific irradiance vectors.</p>
+          </div>
+          <div className="bg-primary text-primary-foreground rounded-[3.5rem] p-12 shadow-2xl shadow-primary/20 h-full flex flex-col justify-center">
+            <SummaryBullets
+              systemSizeKW={recommendation.systemSizeKW}
+              panelCount={recommendation.panelCount}
+              annualProductionKWh={recommendation.estimatedAnnualProductionKWh}
+              roofArea={Math.round(roofAnalysis.roofAreaSqMeters * (roofAnalysis.usableAreaPercentage / 100))}
+              layoutSuggestion={recommendation.layoutSuggestion}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 4. EXECUTION ROADMAP */}
+      <section className="bg-muted/10 rounded-[5rem] p-10 md:p-20 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-12 opacity-[0.03] rotate-12 transition-transform duration-1000 group-hover:scale-125">
+          <svg className="w-96 h-96 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 7V3L4 14h7v7l9-11h-7z" /></svg>
+        </div>
+
+        <div className="relative z-10 max-w-4xl mx-auto space-y-16">
+          <div className="text-center space-y-6">
+            <h2 className="text-5xl font-black text-foreground tracking-tighter uppercase italic leading-none">
+              Strategic <span className="text-primary italic">Roadmap</span>
+            </h2>
+            <div className="h-1 w-24 bg-primary/20 mx-auto rounded-full" />
+            <p className="text-xl text-muted-foreground font-medium max-w-2xl mx-auto">
+              Validated next steps to transition your property to an energy-independent architecture.
+            </p>
+          </div>
+
+          <SuggestionsSection suggestions={recommendation.suggestions} />
+        </div>
+      </section>
+
+      {/* 5. FINISH / CTA */}
+      <div className="flex flex-col items-center gap-8 pt-12">
+        <div className="h-32 w-px bg-gradient-to-b from-primary/40 to-transparent" />
+        <Button variant="outline" onClick={onReset} className="px-12 h-24 rounded-[3rem] font-black text-2xl hover:bg-destructive hover:text-white hover:border-destructive transition-all duration-500 group shadow-2xl bg-white border-2 hover:scale-105">
+          <svg className="mr-6 w-8 h-8 group-hover:rotate-180 transition-transform duration-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          Initialize New Assessment
         </Button>
+        <p className="text-sm font-bold text-muted-foreground uppercase tracking-[0.3em] opacity-40">System Release 2.5 &bull; Core Optimized</p>
       </div>
     </div>
   );
