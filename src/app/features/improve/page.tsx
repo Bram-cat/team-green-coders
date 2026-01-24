@@ -51,7 +51,7 @@ export default function ImprovePage() {
                         Improve Your Solar Setup
                     </h1>
                     <p className="text-muted-foreground max-w-md mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                        Already have solar panels? Get expert recommendations to maximize your system's efficiency and energy production.
+                        Already have solar panels? Get expert recommendations to maximize your system&apos;s efficiency and energy production.
                     </p>
                 </div>
 

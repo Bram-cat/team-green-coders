@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
@@ -100,6 +101,7 @@ export function ImprovementResultsDisplay({
         <Card>
           <CardContent className="p-6">
             <h2 className="text-xl font-semibold text-foreground mb-4">Your Solar Installation</h2>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={uploadedImageBase64}
               alt="Uploaded solar installation"
@@ -134,7 +136,7 @@ export function ImprovementResultsDisplay({
           </div>
 
           <p className="text-muted-foreground">
-            By implementing the suggested improvements, you could increase your system's efficiency from{' '}
+            By implementing the suggested improvements, you could increase your system&apos;s efficiency from{' '}
             <span className="font-semibold text-foreground">{currentInstallation.currentEfficiency}%</span> to{' '}
             <span className="font-semibold text-primary">{improvements.potentialEfficiency}%</span>, adding an estimated{' '}
             <span className="font-semibold text-foreground">
