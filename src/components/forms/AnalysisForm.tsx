@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { Address } from '@/types/address';
 import { AnalyzeResponse, AnalyzeAPIResponse } from '@/types/api';
 
@@ -98,38 +99,50 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
           Enter your PEI property address for accurate solar estimates
         </p>
 
-        <Input
-          label="Street Address"
-          value={address.street}
-          onChange={(e) => setAddress({ ...address, street: e.target.value })}
-          placeholder="123 Queen Street"
-          error={errors.street}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="street">Street Address</Label>
           <Input
-            label="City"
-            value={address.city}
-            onChange={(e) => setAddress({ ...address, city: e.target.value })}
-            placeholder="Charlottetown"
-            error={errors.city}
+            id="street"
+            value={address.street}
+            onChange={(e) => setAddress({ ...address, street: e.target.value })}
+            placeholder="123 Queen Street"
           />
-          <Input
-            label="Postal Code"
-            value={address.postalCode}
-            onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
-            placeholder="C1A 1A1"
-            error={errors.postalCode}
-          />
+          {errors.street && <p className="text-sm text-red-500">{errors.street}</p>}
         </div>
 
-        <Input
-          label="Country"
-          value={address.country}
-          onChange={(e) => setAddress({ ...address, country: e.target.value })}
-          placeholder="Canada"
-          error={errors.country}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="city">City</Label>
+            <Input
+              id="city"
+              value={address.city}
+              onChange={(e) => setAddress({ ...address, city: e.target.value })}
+              placeholder="Charlottetown"
+            />
+            {errors.city && <p className="text-sm text-red-500">{errors.city}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="postalCode">Postal Code</Label>
+            <Input
+              id="postalCode"
+              value={address.postalCode}
+              onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
+              placeholder="C1A 1A1"
+            />
+            {errors.postalCode && <p className="text-sm text-red-500">{errors.postalCode}</p>}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="country">Country</Label>
+          <Input
+            id="country"
+            value={address.country}
+            onChange={(e) => setAddress({ ...address, country: e.target.value })}
+            placeholder="Canada"
+          />
+          {errors.country && <p className="text-sm text-red-500">{errors.country}</p>}
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -138,16 +151,20 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
           Help us calculate your exact savings
         </p>
 
-        <div className="relative">
-          <Input
-            label="Average Monthly Electricity Bill ($)"
-            value={monthlyBill}
-            onChange={(e) => setMonthlyBill(e.target.value)}
-            placeholder="150"
-            type="number"
-            min="0"
-          />
-          <div className="absolute right-3 top-9 text-gray-500 text-sm">CAD</div>
+        <div className="space-y-2 relative">
+          <Label htmlFor="monthlyBill">Average Monthly Electricity Bill ($)</Label>
+          <div className="relative">
+            <Input
+              id="monthlyBill"
+              value={monthlyBill}
+              onChange={(e) => setMonthlyBill(e.target.value)}
+              placeholder="150"
+              type="number"
+              min="0"
+              className="pr-12"
+            />
+            <div className="absolute right-3 top-2.5 text-gray-500 text-sm">CAD</div>
+          </div>
         </div>
       </div>
 
