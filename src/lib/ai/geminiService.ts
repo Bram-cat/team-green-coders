@@ -177,28 +177,33 @@ function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const HOUSE_VERIFICATION_PROMPT = `As a Visual Sentry, your ONLY task is to determine if this image clearly depicts a REAL building with a visible roof.
+const HOUSE_VERIFICATION_PROMPT = `As a strict Architectural Sentry, your ONLY job is to determine if this image is a REAL house/building suitable for solar panel analysis.
 
-CRITICAL REJECTION CRITERIA (If any are true, return "INVALID"):
-1. COLLAGES: If there are multiple smaller images combined (e.g. vision boards).
-2. LOGOS/GRAPHICS: If it is a digital logo, icon, rocket, star, or abstract art.
-3. SUBJECT: If the main subject is a person, animal, car, or interior room.
-4. SCENERY: If there are trees/water but NO clear, dominant building in the center.
+CRITICAL: YOU MUST REJECT (status: "INVALID") ANY OF THE FOLLOWING:
+1. DIGITAL LOGOS/GRAPHICS: The image is a company logo, a rocket icon (like "L" with a rocket), or computer-generated art.
+2. COLLAGES: Multiple images combined into one (e.g., vision boards).
+3. SUBJECT: The primary focus is a person, animal, car, food, or interior room.
+4. SCENERY: Wide shots of trees, ocean, or nature where NO building is the central subject.
+5. TEXT/DIAGRAMS: Screenshots of text, charts, maps, or technical drawings.
 
-CRITICAL APPROVAL CRITERIA (Only return "VALID" if all are true):
-1. A REAL building (house, shed, office) is the primary subject.
-2. The roof is clearly visible and occupies significant space.
-3. You can see real-world textures (shingles, metal, tiles).
+CRITICAL: YOU MAY ONLY APPROVE (status: "VALID") IF:
+1. It is a single, clear photo of a real-world residential or commercial building.
+2. A roof is clearly visible and occupies significant space in the frame.
 
-Respond with EXACTLY one word: "VALID" or "INVALID". No explanation.`;
+RETURN ONLY VALID JSON:
+{
+  "status": "VALID" | "INVALID",
+  "reason": "Detailed reason why it matches or fails criteria. Mention 'logo' if it looks like a graphic."
+}`;
 
 async function verifyIsHouse(
   genAI: GoogleGenerativeAI,
   base64Image: string,
   mimeType: string
-): Promise<boolean> {
-  // Use a fast model for verification
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+): Promise<{ status: 'VALID' | 'INVALID'; reason: string }> {
+  // Use pro model if available for better reasoning, otherwise flash
+  const modelName = 'gemini-1.5-pro';
+  const model = genAI.getGenerativeModel({ model: modelName });
 
   const imagePart = {
     inlineData: {
@@ -210,15 +215,40 @@ async function verifyIsHouse(
   try {
     const result = await Promise.race([
       model.generateContent([HOUSE_VERIFICATION_PROMPT, imagePart]),
-      createTimeoutPromise(10000),
+      createTimeoutPromise(12000),
     ]);
 
-    const text = result.response.text().trim().toUpperCase();
-    console.log(`[AI Sentry] Validation result: ${text}`);
-    return text.includes('VALID') && !text.includes('INVALID');
+    const text = result.response.text().trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+
+    if (!jsonMatch) {
+      console.warn('[AI Sentry] Failed to parse JSON, falling back to permissive check');
+      return { status: 'VALID', reason: 'Format error' };
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    console.log(`[AI Sentry] Result: ${parsed.status} - ${parsed.reason}`);
+
+    return {
+      status: parsed.status === 'VALID' ? 'VALID' : 'INVALID',
+      reason: parsed.reason || 'Architectural integrity check failed.'
+    };
   } catch (error) {
-    console.error('[AI Sentry] Validation failed, defaulting to cautious reject:', error);
-    return false;
+    console.error('[AI Sentry] Error:', error);
+    // On hard service error, we might fallback to Flash and try once more
+    try {
+      const flashModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const flashResult = await flashModel.generateContent([HOUSE_VERIFICATION_PROMPT, imagePart]);
+      const flashText = flashResult.response.text().trim();
+      const flashJson = flashText.match(/\{[\s\S]*\}/);
+      if (flashJson) {
+        const parsed = JSON.parse(flashJson[0]);
+        return { status: parsed.status === 'VALID' ? 'VALID' : 'INVALID', reason: parsed.reason };
+      }
+    } catch (inner) {
+      console.error('[AI Sentry] Flash fallback failed');
+    }
+    return { status: 'INVALID', reason: 'Security Sentry service interruption.' };
   }
 }
 
@@ -232,11 +262,11 @@ async function tryAnalyzeWithModel(
   mimeType: string
 ): Promise<AIAnalysisResult> {
   // PRE-VALIDATION STEP
-  const isValid = await verifyIsHouse(genAI, base64Image, mimeType);
-  if (!isValid) {
+  const sentryResult = await verifyIsHouse(genAI, base64Image, mimeType);
+  if (sentryResult.status !== 'VALID') {
     return {
       success: false,
-      error: 'Invalid Image: Our AI Sentry has flagged this as a non-architectural image. Please upload a clear photo of a building with a roof (aerial or angled).',
+      error: `Invalid Image: ${sentryResult.reason}`,
     };
   }
 
@@ -579,11 +609,11 @@ async function tryAnalyzeExistingPanelsWithModel(
   mimeType: string
 ): Promise<AIExistingPanelsResult> {
   // PRE-VALIDATION STEP
-  const isValid = await verifyIsHouse(genAI, base64Image, mimeType);
-  if (!isValid) {
+  const sentryResult = await verifyIsHouse(genAI, base64Image, mimeType);
+  if (sentryResult.status !== 'VALID') {
     return {
       success: false,
-      error: 'Invalid Image: Our AI Sentry has flagged this as a non-architectural image. To analyze improvements, please upload a direct photo of your current solar panels or a building with a roof.',
+      error: `Invalid Image: ${sentryResult.reason}`,
     };
   }
 
