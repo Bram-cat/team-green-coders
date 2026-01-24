@@ -5,8 +5,10 @@ import { SummaryBullets } from './SummaryBullets';
 import { SuggestionsSection } from './SuggestionsSection';
 import { FinancialSummary } from './FinancialSummary';
 import { SolarPanelVisualization } from './SolarPanelVisualization';
+import { ImageGenerationPanel } from './ImageGenerationPanel';
 import { SolarRecommendation, RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
 import { GeocodedLocation } from '@/types/address';
+import { GeneratedPanelImage } from '@/lib/services/imageGenerationService';
 
 interface ResultsDisplayProps {
   recommendation: SolarRecommendation;
@@ -20,6 +22,7 @@ interface ResultsDisplayProps {
   geocodedLocation?: GeocodedLocation;
   uploadedImageBase64?: string;
   aiSummary?: string;
+  imagePrompts?: GeneratedPanelImage[];
 }
 
 export function ResultsDisplay({
@@ -33,6 +36,7 @@ export function ResultsDisplay({
   geocodedLocation,
   uploadedImageBase64,
   aiSummary,
+  imagePrompts,
 }: ResultsDisplayProps) {
   // Use AI summary if available, otherwise use the default explanation
   const displayExplanation = aiSummary || recommendation.explanation;
@@ -59,10 +63,20 @@ export function ResultsDisplay({
         )}
       </Card>
 
+      {/* AI-Generated Visualizations */}
+      {imagePrompts && imagePrompts.length > 0 && (
+        <Card>
+          <ImageGenerationPanel
+            imagePrompts={imagePrompts}
+            address={geocodedLocation?.formattedAddress || 'Your Property'}
+          />
+        </Card>
+      )}
+
       {/* Panel Visualization */}
       <Card>
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Panel Layout Visualization
+          Panel Layout Schematic
         </h2>
         <SolarPanelVisualization
           uploadedImageUrl={uploadedImageBase64}

@@ -3,6 +3,7 @@ import {
   analyzeRoofWithAI,
   convertToRoofAnalysisResult,
   isGeminiAvailable,
+  AIRoofAnalysis,
 } from '@/lib/ai/geminiService';
 
 /**
@@ -12,12 +13,12 @@ import {
  *
  * @param imageBuffer - Image as a Buffer
  * @param mimeType - MIME type of the image
- * @returns Promise<RoofAnalysisResult & { aiConfidence?: number; usedAI: boolean }>
+ * @returns Promise<RoofAnalysisResult & { aiConfidence?: number; usedAI: boolean; aiAnalysis?: AIRoofAnalysis }>
  */
 export async function analyzeRoofImageFromBuffer(
   imageBuffer: Buffer,
   mimeType: string
-): Promise<RoofAnalysisResult & { aiConfidence?: number; usedAI: boolean }> {
+): Promise<RoofAnalysisResult & { aiConfidence?: number; usedAI: boolean; aiAnalysis?: AIRoofAnalysis }> {
   const { vision: aiAvailable } = isGeminiAvailable();
 
   // Try AI analysis if available
@@ -34,6 +35,7 @@ export async function analyzeRoofImageFromBuffer(
           ...roofResult,
           aiConfidence: aiResult.data.confidence,
           usedAI: true,
+          aiAnalysis: aiResult.data, // Include full AI analysis for image generation
         };
       } else {
         console.warn('AI analysis failed after retries:', aiResult.error);

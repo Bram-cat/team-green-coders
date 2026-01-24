@@ -2,12 +2,12 @@ import { Address, GeocodedLocation } from '@/types/address';
 import { SolarPotentialResult } from '@/types/analysis';
 import {
   PEI_COORDINATES,
-  PEI_SOLAR_DATA,
   PEI_CLIMATE_FACTORS,
   PEI_COMBINED_EFFICIENCY,
   PEI_INSTALLATION_COSTS,
 } from '@/lib/data/peiSolarData';
 import { geocodeAddress as realGeocodeAddress, isGeocodingAvailable } from '@/lib/services/geocodingService';
+import { fetchNASAPowerData, getDefaultPEISolarData } from '@/lib/services/nasaPowerService';
 
 /**
  * Geocodes an address to get latitude/longitude.
@@ -39,9 +39,9 @@ export async function geocodeAddressForSolar(
 }
 
 /**
- * Retrieves solar potential data for a PEI location.
+ * Retrieves solar potential data for a location using NASA POWER API.
  *
- * Uses hardcoded PEI-specific solar data from Natural Resources Canada.
+ * Uses real solar irradiance data based on geocoded coordinates.
  *
  * @param address - User-provided address
  * @returns Promise<SolarPotentialResult & { geocodedLocation: GeocodedLocation; usedRealGeocoding: boolean }>
@@ -52,9 +52,33 @@ export async function getLocationSolarPotential(
   // Geocode the address
   const locationResult = await geocodeAddressForSolar(address);
 
-  // Use PEI-specific solar data
-  const peakSunHours = PEI_SOLAR_DATA.averagePeakSunHours;
-  const averageIrradiance = PEI_SOLAR_DATA.annualGHI;
+  // Fetch real solar data from NASA POWER API
+  let solarData;
+  let dataSource: 'nasa' | 'cached' | 'default' = 'default';
+
+  try {
+    solarData = await fetchNASAPowerData(
+      locationResult.latitude,
+      locationResult.longitude
+    );
+    dataSource = solarData.dataSource;
+    console.log(`[Solar Potential] Using ${dataSource} data for location:`, {
+      lat: locationResult.latitude,
+      lon: locationResult.longitude,
+      annualGHI: solarData.annualGHI,
+      pvPotential: solarData.photovoltaicPotential,
+    });
+  } catch (error) {
+    console.warn('[Solar Potential] Failed to fetch NASA data, using PEI defaults:', error);
+    solarData = getDefaultPEISolarData(
+      locationResult.latitude,
+      locationResult.longitude
+    );
+  }
+
+  // Use location-specific solar data
+  const peakSunHours = solarData.averagePeakSunHours;
+  const averageIrradiance = solarData.annualGHI;
 
   // Calculate optimal panel count based on a typical usable roof area
   // This will be refined when combined with actual roof analysis
@@ -84,14 +108,18 @@ export async function getLocationSolarPotential(
 
 /**
  * Calculate expected annual production for a given system size
- * Uses PEI-specific climate factors
+ * Uses location-specific climate factors
  *
  * @param systemSizeKW - System size in kilowatts
+ * @param peakSunHoursPerDay - Location-specific peak sun hours
  * @returns Expected annual production in kWh
  */
-export function calculateAnnualProduction(systemSizeKW: number): number {
+export function calculateAnnualProduction(
+  systemSizeKW: number,
+  peakSunHoursPerDay: number = 3.7
+): number {
   // Base calculation: System Size (kW) × Peak Sun Hours × 365 days
-  const baseProduction = systemSizeKW * PEI_SOLAR_DATA.averagePeakSunHours * 365;
+  const baseProduction = systemSizeKW * peakSunHoursPerDay * 365;
 
   // Apply PEI climate efficiency factors
   const effectiveProduction = baseProduction * PEI_COMBINED_EFFICIENCY;
@@ -103,9 +131,13 @@ export function calculateAnnualProduction(systemSizeKW: number): number {
  * Get production estimate with detailed breakdown
  *
  * @param systemSizeKW - System size in kilowatts
+ * @param peakSunHoursPerDay - Location-specific peak sun hours
  * @returns Production estimate with breakdown factors
  */
-export function getDetailedProductionEstimate(systemSizeKW: number): {
+export function getDetailedProductionEstimate(
+  systemSizeKW: number,
+  peakSunHoursPerDay: number = 3.7
+): {
   grossProduction: number;
   snowLoss: number;
   temperatureBonus: number;
@@ -114,7 +146,7 @@ export function getDetailedProductionEstimate(systemSizeKW: number): {
   systemLoss: number;
   netProduction: number;
 } {
-  const grossProduction = systemSizeKW * PEI_SOLAR_DATA.averagePeakSunHours * 365;
+  const grossProduction = systemSizeKW * peakSunHoursPerDay * 365;
 
   const snowLoss = grossProduction * PEI_CLIMATE_FACTORS.snowLossFactor;
   const temperatureBonus = grossProduction * (PEI_CLIMATE_FACTORS.temperatureCoefficient - 1);

@@ -59,12 +59,6 @@ export interface AIAnalysisSuccess {
 
 export type AIAnalysisResult = AIAnalysisSuccess | AIAnalysisError;
 
-export interface GeneratedPanelImage {
-  angle: string;
-  description: string;
-  dataUrl: string; // base64 image
-}
-
 // ============================================
 // PEI SOLAR DATA CONTEXT (from information.json & calculation.json)
 // ============================================
@@ -299,116 +293,6 @@ export async function analyzeRoofWithAI(
 }
 
 // ============================================
-// PANEL PLACEMENT IMAGE GENERATION (Gemini AI #2)
-// ============================================
-
-const PANEL_PLACEMENT_PROMPT_TEMPLATE = (
-  roofData: AIRoofAnalysis,
-  angle: 'aerial' | 'south' | 'west'
-) => `Generate a photorealistic visualization of solar panel placement on this house from a ${angle} view.
-
-HOUSE CHARACTERISTICS:
-- Roof area: ${roofData.roofAreaSqMeters} m²
-- Roof pitch: ${roofData.roofPitchDegrees}°
-- Primary orientation: ${roofData.orientation}
-- Obstacles: ${roofData.obstacles.join(', ') || 'none'}
-- Shading level: ${roofData.shadingLevel}
-
-PANEL LAYOUT:
-- ${roofData.estimatedPanelCount} solar panels (400W each, dark blue/black)
-- Arranged in ${Math.ceil(Math.sqrt(roofData.estimatedPanelCount))} rows
-- Tilt angle: ${roofData.optimalTiltAngle}°
-- Setback from edges: 3 feet (fire code)
-- Avoid obstacles: ${roofData.obstacles.join(', ')}
-
-VIEW ANGLE: ${angle === 'aerial' ? 'Top-down aerial view (45° angle), like satellite imagery' :
-             angle === 'south' ? 'Ground level view from south side, showing full panel face' :
-             'Ground level view from west side, showing side perspective'}
-
-REQUIREMENTS:
-1. Show a typical PEI residential house (${angle === 'aerial' ? 'from above' : 'from ground level'})
-2. Clearly visible solar panels in dark blue/black, arranged in neat rows
-3. Realistic PEI environment (trees, neighboring houses at distance, Canadian architecture)
-4. Clear sky or partly cloudy (good for solar)
-5. Panels should cover ~${roofData.usableAreaPercentage}% of visible roof area
-6. Professional installation quality - neat, aligned, proper spacing
-
-STYLE: Photorealistic, professional architecture visualization, bright daylight`;
-
-/**
- * Generate panel placement images from multiple angles
- * Uses AI Key #2 for image generation
- */
-export async function generatePanelPlacementImages(
-  originalImageBuffer: Buffer,
-  originalMimeType: string,
-  roofData: AIRoofAnalysis
-): Promise<GeneratedPanelImage[]> {
-  if (!genAI2) {
-    console.log('[AI #2] Image generation not available (no API key #2)');
-    return [];
-  }
-
-  const angles: Array<'aerial' | 'south' | 'west'> = ['aerial', 'south', 'west'];
-  const generatedImages: GeneratedPanelImage[] = [];
-
-  for (const angle of angles) {
-    let lastError = '';
-
-    for (const modelName of IMAGE_GEN_MODELS) {
-      try {
-        console.log(`[AI #2] Generating ${angle} view with ${modelName}...`);
-
-        const model = genAI2.getGenerativeModel({ model: modelName });
-        const prompt = PANEL_PLACEMENT_PROMPT_TEMPLATE(roofData, angle);
-
-        // Include the original image as reference
-        const originalImagePart = {
-          inlineData: {
-            data: originalImageBuffer.toString('base64'),
-            mimeType: originalMimeType,
-          },
-        };
-
-        const result = await Promise.race([
-          model.generateContent([prompt, originalImagePart, "\n\nGenerate a photorealistic image based on this house and the specifications above."]),
-          createTimeoutPromise(REQUEST_TIMEOUT_MS),
-        ]);
-
-        const response = result.response;
-        const text = response.text();
-
-        // Note: Gemini text models cannot generate images directly
-        // This is a conceptual placeholder - actual implementation would need Imagen API
-        console.log(`[AI #2] ${angle} view generation completed (text-based)`);
-
-        // For now, we'll return descriptions that the frontend can use
-        generatedImages.push({
-          angle: angle,
-          description: text.substring(0, 200),
-          dataUrl: '', // Would be populated with actual image from Imagen API
-        });
-
-        break; // Success, move to next angle
-      } catch (error) {
-        lastError = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`[AI #2] ${modelName} image generation failed for ${angle}:`, lastError);
-
-        if (lastError.includes('404') || lastError.includes('not found')) {
-          continue; // Try next model
-        }
-      }
-    }
-
-    if (generatedImages.length === 0 || generatedImages[generatedImages.length - 1].angle !== angle) {
-      console.warn(`[AI #2] Failed to generate ${angle} view`);
-    }
-  }
-
-  return generatedImages;
-}
-
-// ============================================
 // FINANCIAL SUMMARY GENERATION
 // ============================================
 
@@ -556,12 +440,12 @@ function generateTemplateSummary(
   systemSizeKW: number
 ): string {
   const quality = roofData.shadingLevel === 'low' ? 'excellent' :
-                  roofData.shadingLevel === 'medium' ? 'good' : 'fair';
+    roofData.shadingLevel === 'medium' ? 'good' : 'fair';
 
   const panelCount = Math.round(systemSizeKW / 0.4);
 
   const paybackQuality = financials.simplePaybackYears <= 10 ? 'outstanding' :
-                         financials.simplePaybackYears <= 13 ? 'strong' : 'moderate';
+    financials.simplePaybackYears <= 13 ? 'strong' : 'moderate';
 
   return `Your PEI property shows ${quality} solar potential with ${roofData.usableAreaPercentage}% usable roof area. A ${systemSizeKW} kW system (${panelCount} × 400W panels) could save you approximately $${financials.annualElectricitySavings.toLocaleString()} annually at Maritime Electric's current rates, with a ${paybackQuality} payback period of ${financials.simplePaybackYears} years. Over 25 years, you could save up to $${financials.twentyFiveYearSavings.toLocaleString()}, and PEI's cold winters will actually boost your panel efficiency by 2-3%. Consider applying for the Canada Greener Homes grant (up to $5,000) to further reduce your upfront costs!`;
 }
