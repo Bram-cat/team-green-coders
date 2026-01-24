@@ -436,14 +436,20 @@ ${PEI_SOLAR_CONTEXT}
 
 TASK: Analyze this image of an EXISTING solar panel installation and provide detailed improvement recommendations.
 
-CRITICAL: You must VISUALLY IDENTIFY existing solar panels on this roof and assess their current setup.
+CRITICAL: You must CAREFULLY COUNT EVERY SINGLE solar panel visible in this image. Count slowly and methodically.
 
 ANALYSIS REQUIREMENTS:
 
-1. PANEL COUNT & SYSTEM SIZE:
-   - Count the number of visible solar panels
-   - Estimate system size (Panel Count × 400W ÷ 1000 = kW)
-   - Identify panel type/age if visible
+1. PANEL COUNT & SYSTEM SIZE - MOST CRITICAL:
+   - **CAREFULLY count EACH individual solar panel visible in the image**
+   - Count panels on ALL roof sections and orientations
+   - Look for panels that may be partially hidden or at different angles
+   - DO NOT estimate - count each blue/black rectangular panel individually
+   - DOUBLE CHECK your count before finalizing
+   - Typical residential panels are blue or black rectangles in a grid pattern
+   - Each panel is approximately 1.7m × 1m in size
+   - Calculate system size: (Exact Panel Count × 400W) ÷ 1000 = kW
+   - Example: 33 panels × 400W ÷ 1000 = 13.2 kW
 
 2. CURRENT PLACEMENT ASSESSMENT:
    - Orientation: Which direction do panels face?
@@ -471,8 +477,8 @@ ANALYSIS REQUIREMENTS:
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {
-  "currentPanelCount": <number of visible panels>,
-  "estimatedSystemSizeKW": <calculated kW>,
+  "currentPanelCount": <EXACT count of visible panels - count carefully! Typical range: 12-40>,
+  "estimatedSystemSizeKW": <currentPanelCount × 0.4>,
   "currentEfficiency": <0-100, current performance %>,
   "potentialEfficiency": <0-100, potential after improvements>,
   "orientation": "<direction panels face>",

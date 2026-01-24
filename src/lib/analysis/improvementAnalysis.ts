@@ -12,8 +12,10 @@ export interface ImprovementSuggestion {
 
 export interface ExistingInstallationAnalysis {
   // Current installation details
-  currentPanelCount: number;
+  currentPanelCount: number; // AI detected count (minimum of range)
+  currentPanelCountMax: number; // AI count + 7 (maximum of range)
   estimatedSystemSizeKW: number;
+  estimatedSystemSizeKWMax: number; // System size using max panel count
   currentEfficiency: number;
   orientation: string;
   panelCondition: string;
@@ -53,8 +55,16 @@ export async function analyzeExistingInstallation(
 
       if (aiResult.success) {
         console.log('AI improvement analysis successful, confidence:', aiResult.data.confidence);
+
+        // Calculate range: AI count to AI count + 7
+        const aiPanelCount = aiResult.data.currentPanelCount;
+        const maxPanelCount = aiPanelCount + 7;
+        const panelWattage = 0.4; // 400W per panel = 0.4kW
+
         return {
           ...aiResult.data,
+          currentPanelCountMax: maxPanelCount,
+          estimatedSystemSizeKWMax: parseFloat((maxPanelCount * panelWattage).toFixed(2)),
           usedAI: true,
           aiConfidence: aiResult.data.confidence,
         };
@@ -85,8 +95,10 @@ export async function analyzeExistingInstallation(
  */
 function generateMockImprovementAnalysis(): Omit<ExistingInstallationAnalysis, 'usedAI' | 'aiConfidence'> {
   const currentPanelCount = Math.floor(Math.random() * 12) + 12; // 12-24 panels
+  const currentPanelCountMax = currentPanelCount + 7; // Add 7 for range
   const panelWattage = 350; // Typical 350W panel
   const estimatedSystemSizeKW = (currentPanelCount * panelWattage) / 1000;
+  const estimatedSystemSizeKWMax = (currentPanelCountMax * panelWattage) / 1000;
   const currentEfficiency = Math.floor(Math.random() * 20) + 65; // 65-85% efficiency
 
   const shadingLevels: ShadingLevel[] = ['low', 'medium', 'high'];
@@ -172,7 +184,9 @@ function generateMockImprovementAnalysis(): Omit<ExistingInstallationAnalysis, '
 
   return {
     currentPanelCount,
+    currentPanelCountMax,
     estimatedSystemSizeKW: parseFloat(estimatedSystemSizeKW.toFixed(2)),
+    estimatedSystemSizeKWMax: parseFloat(estimatedSystemSizeKWMax.toFixed(2)),
     currentEfficiency,
     orientation: orientations[Math.floor(Math.random() * orientations.length)],
     panelCondition: conditions[Math.floor(Math.random() * conditions.length)],

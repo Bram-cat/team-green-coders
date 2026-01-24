@@ -6,7 +6,9 @@ import { RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
 interface ImprovementResultsDisplayProps {
   currentInstallation: {
     panelCount: number;
+    panelCountMax: number;
     estimatedSystemSizeKW: number;
+    estimatedSystemSizeKWMax: number;
     currentEfficiency: number;
     orientation: string;
     panelCondition: string;
@@ -61,11 +63,15 @@ export function ImprovementResultsDisplay({
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
             <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <div className="text-3xl font-bold text-primary">{currentInstallation.panelCount}</div>
+              <div className="text-3xl font-bold text-primary">
+                {currentInstallation.panelCount} - {currentInstallation.panelCount + 7}
+              </div>
               <div className="text-sm text-muted-foreground mt-1">Panels</div>
             </div>
             <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <div className="text-3xl font-bold text-primary">{currentInstallation.estimatedSystemSizeKW} kW</div>
+              <div className="text-3xl font-bold text-primary">
+                {currentInstallation.estimatedSystemSizeKW} - {((currentInstallation.panelCount + 7) * (currentInstallation.estimatedSystemSizeKW / currentInstallation.panelCount)).toFixed(1)} kW
+              </div>
               <div className="text-sm text-muted-foreground mt-1">System Size</div>
             </div>
             <div className="text-center p-4 bg-muted/30 rounded-lg">

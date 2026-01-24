@@ -22,6 +22,7 @@ export function ImproveAnalysisForm({ onSuccess, onError, onLoadingChange }: Imp
     postalCode: '',
     country: 'Canada',
   });
+  const [actualPanelCount, setActualPanelCount] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -53,6 +54,9 @@ export function ImproveAnalysisForm({ onSuccess, onError, onLoadingChange }: Imp
       formData.append('city', address.city);
       formData.append('postalCode', address.postalCode);
       formData.append('country', address.country);
+      if (actualPanelCount) {
+        formData.append('actualPanelCount', actualPanelCount);
+      }
 
       const response = await fetch('/api/improve', {
         method: 'POST',
@@ -85,6 +89,23 @@ export function ImproveAnalysisForm({ onSuccess, onError, onLoadingChange }: Imp
         />
         <p className="text-sm text-muted-foreground">
           Upload a photo showing your existing solar panel installation
+        </p>
+      </div>
+
+      {/* Actual Panel Count (Optional) */}
+      <div className="space-y-2">
+        <Label htmlFor="actualPanelCount">Actual Panel Count (Optional)</Label>
+        <Input
+          id="actualPanelCount"
+          type="number"
+          min="1"
+          max="100"
+          placeholder="e.g., 42"
+          value={actualPanelCount}
+          onChange={(e) => setActualPanelCount(e.target.value)}
+        />
+        <p className="text-sm text-muted-foreground">
+          If you know the exact number of panels, enter it here to improve accuracy
         </p>
       </div>
 
