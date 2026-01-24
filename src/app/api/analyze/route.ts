@@ -118,6 +118,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
     const addressString = `${address.street}, ${address.city}, ${address.postalCode}`;
 
     // Create AIRoofAnalysis for image generation
+    // Use the actual calculated panel count from the recommendation
     const aiRoofData = roofAnalysisResult.aiAnalysis || {
       roofAreaSqMeters: roofAnalysis.roofAreaSqMeters,
       usableAreaPercentage: roofAnalysis.usableAreaPercentage,
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
       orientation: 'south' as const, // Default orientation
       obstacles: [],
       confidence: roofAnalysisResult.aiConfidence || 50,
-      estimatedPanelCount: solarPotential.optimalPanelCount,
+      estimatedPanelCount: recommendation.panelCount, // Use actual calculated panel count
       optimalTiltAngle: 44, // PEI optimal angle
     };
 

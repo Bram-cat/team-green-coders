@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Use GOOGLE_AI_API_KEY_2 for image generation
 const apiKey = process.env.GOOGLE_AI_API_KEY_2 || '';
@@ -24,67 +25,104 @@ export async function POST(request: NextRequest) {
 
         console.log('[Image Generation] Generating image with prompt:', prompt.substring(0, 100) + '...');
 
-        // Use Google's Vertex AI Imagen API via REST
-        // Endpoint: https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict
-        const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict';
-
-        const requestBody = {
-            instances: [{
-                prompt: prompt,
-            }],
-            parameters: {
-                sampleCount: 1, // Generate 1 image
-                aspectRatio: '16:9', // Good for house visualizations
-                safetyFilterLevel: 'block_some',
-                personGeneration: 'allow_adult',
-            }
-        };
-
         try {
-            console.log('[Image Generation] Calling Imagen API...');
-            const response = await fetch(`${endpoint}?key=${apiKey}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
+            // Use Google Generative AI SDK for image generation
+            const genAI = new GoogleGenerativeAI(apiKey);
+
+            // Try using imagen-3.0-generate-001 model
+            const model = genAI.getGenerativeModel({ model: 'imagen-3.0-generate-001' });
+
+            console.log('[Image Generation] Calling Imagen API via SDK...');
+
+            // Generate image using the SDK
+            const result = await model.generateContent({
+                contents: [{
+                    role: 'user',
+                    parts: [{
+                        text: prompt
+                    }]
+                }]
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[Image Generation] Imagen API error:', response.status, errorText);
-
-                // If Imagen doesn't work, try alternative approaches
-                return NextResponse.json({
-                    success: false,
-                    error: `Image generation failed: ${response.statusText}. Please ensure GOOGLE_AI_API_KEY_2 is configured for Imagen access.`
-                }, { status: 500 });
-            }
-
-            const data = await response.json();
+            const response = await result.response;
             console.log('[Image Generation] Success!');
 
-            // Extract the generated image
-            if (data.predictions && data.predictions.length > 0) {
-                const imageData = data.predictions[0].bytesBase64Encoded;
-                const imageUrl = `data:image/png;base64,${imageData}`;
+            // The response should contain the generated image
+            if (response && response.candidates && response.candidates.length > 0) {
+                const candidate = response.candidates[0];
 
-                return NextResponse.json({
-                    success: true,
-                    imageUrl: imageUrl,
-                });
-            } else {
-                throw new Error('No image data in response');
+                // Extract image data from the response
+                // Note: The exact format may vary, adjust based on actual response
+                if (candidate.content && candidate.content.parts) {
+                    for (const part of candidate.content.parts) {
+                        if (part.inlineData && part.inlineData.data) {
+                            const imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                            return NextResponse.json({
+                                success: true,
+                                imageUrl: imageUrl,
+                            });
+                        }
+                    }
+                }
             }
+
+            // If we reach here, the response format was unexpected
+            console.warn('[Image Generation] Unexpected response format:', JSON.stringify(response));
+            throw new Error('Unexpected response format from Imagen API');
 
         } catch (imagenError: any) {
             console.error('[Image Generation] Imagen failed:', imagenError.message);
+            console.error('[Image Generation] Full error:', imagenError);
 
-            // Fallback: Return a message that image generation is not available
+            // Try fallback with Gemini for image editing if we have an uploaded image
+            if (uploadedImage) {
+                try {
+                    console.log('[Image Generation] Trying fallback with Gemini image editing...');
+                    const genAI = new GoogleGenerativeAI(apiKey);
+                    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+
+                    // Create a prompt that asks Gemini to describe how to edit the image
+                    const editPrompt = `Based on this roof image, describe in detail where solar panels should be placed: ${prompt}`;
+
+                    const result = await model.generateContent({
+                        contents: [{
+                            role: 'user',
+                            parts: [
+                                { text: editPrompt },
+                                {
+                                    inlineData: {
+                                        mimeType: uploadedImage.mimeType || 'image/jpeg',
+                                        data: uploadedImage.data
+                                    }
+                                }
+                            ]
+                        }]
+                    });
+
+                    const response = await result.response;
+                    const description = response.text();
+
+                    console.log('[Image Generation] Gemini fallback generated description');
+
+                    // Return the description instead of an image
+                    return NextResponse.json({
+                        success: true,
+                        imageUrl: null,
+                        description: description,
+                        fallbackUsed: true
+                    });
+
+                } catch (fallbackError: any) {
+                    console.error('[Image Generation] Gemini fallback failed:', fallbackError.message);
+                }
+            }
+
+            // If all attempts fail, return error
             return NextResponse.json({
                 success: false,
-                error: 'Image generation is not currently available. This feature requires Google Cloud Vertex AI access. Please contact support to enable Imagen API.',
-                fallbackMessage: 'Use the schematic visualization below to see your solar panel layout.'
+                error: `Image generation failed: ${imagenError.message}. The Imagen API may not be available with your current API key.`,
+                fallbackMessage: 'Use the schematic visualization below to see your solar panel layout.',
+                details: imagenError.message
             }, { status: 503 });
         }
 

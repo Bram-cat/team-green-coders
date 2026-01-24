@@ -43,6 +43,10 @@ export async function geocodeAddressForSolar(
  *
  * Uses real solar irradiance data based on geocoded coordinates.
  *
+ * NOTE: This function returns location-specific solar irradiance data.
+ * The actual panel count and system size calculations are done in
+ * calculateRecommendation() using the actual roof area from image analysis.
+ *
  * @param address - User-provided address
  * @returns Promise<SolarPotentialResult & { geocodedLocation: GeocodedLocation; usedRealGeocoding: boolean }>
  */
@@ -80,22 +84,13 @@ export async function getLocationSolarPotential(
   const peakSunHours = solarData.averagePeakSunHours;
   const averageIrradiance = solarData.annualGHI;
 
-  // Calculate optimal panel count based on a typical usable roof area
-  // This will be refined when combined with actual roof analysis
-  const assumedUsableAreaSqM = 25; // Conservative estimate for initial calculation
-  const panelsPerSqM = 1 / PEI_INSTALLATION_COSTS.panelAreaSqM;
-  const optimalPanelCount = Math.floor(assumedUsableAreaSqM * panelsPerSqM);
-
-  // Calculate yearly solar potential for a reference area
-  // Formula: Area (m²) × Annual Irradiance (kWh/m²) × System Efficiency
-  const yearlySolarPotentialKWh = Math.round(
-    assumedUsableAreaSqM * averageIrradiance * PEI_COMBINED_EFFICIENCY
-  );
-
+  // Return just the solar irradiance data and peak sun hours
+  // The actual panel count and production will be calculated in
+  // calculateRecommendation() using the real roof area from image analysis
   return {
-    yearlySolarPotentialKWh,
+    yearlySolarPotentialKWh: 0, // Will be calculated using actual roof area
     averageIrradianceKWhPerSqM: averageIrradiance,
-    optimalPanelCount,
+    optimalPanelCount: 0, // Will be calculated using actual roof area
     peakSunHoursPerDay: peakSunHours,
     geocodedLocation: {
       latitude: locationResult.latitude,
