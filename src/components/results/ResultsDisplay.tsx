@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SuitabilityScore } from './SuitabilityScore';
 import { SummaryBullets } from './SummaryBullets';
@@ -41,67 +41,77 @@ export function ResultsDisplay({
     <div className="space-y-6">
       {/* Suitability Score */}
       <Card>
-        <SuitabilityScore
-          score={recommendation.suitabilityScore}
-          explanation={displayExplanation}
-        />
-        {/* Location info if geocoded */}
-        {geocodedLocation && usedRealGeocoding && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span>{geocodedLocation.formattedAddress}</span>
+        <CardContent className="p-6">
+          <SuitabilityScore
+            score={recommendation.suitabilityScore}
+            explanation={displayExplanation}
+          />
+          {/* Location info if geocoded */}
+          {geocodedLocation && usedRealGeocoding && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>{geocodedLocation.formattedAddress}</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </CardContent>
       </Card>
 
       {/* Panel Visualization */}
       <Card>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Panel Layout Schematic
-        </h2>
-        <SolarPanelVisualization
-          uploadedImageUrl={uploadedImageBase64}
-          panelCount={recommendation.panelCount}
-          roofAreaSqM={roofAnalysis.roofAreaSqMeters}
-          usableAreaPercentage={roofAnalysis.usableAreaPercentage}
-          systemSizeKW={recommendation.systemSizeKW}
-          aiConfidence={aiConfidence}
-          usedAI={usedAI}
-        />
+        <CardContent className="p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Panel Layout Schematic
+          </h2>
+          <SolarPanelVisualization
+            uploadedImageUrl={uploadedImageBase64}
+            panelCount={recommendation.panelCount}
+            roofAreaSqM={roofAnalysis.roofAreaSqMeters}
+            usableAreaPercentage={roofAnalysis.usableAreaPercentage}
+            systemSizeKW={recommendation.systemSizeKW}
+            aiConfidence={aiConfidence}
+            usedAI={usedAI}
+          />
+        </CardContent>
       </Card>
 
       {/* System Summary */}
       <Card>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">System Summary</h2>
-        <SummaryBullets
-          systemSizeKW={recommendation.systemSizeKW}
-          panelCount={recommendation.panelCount}
-          annualProductionKWh={recommendation.estimatedAnnualProductionKWh}
-          roofArea={Math.round(roofAnalysis.roofAreaSqMeters * (roofAnalysis.usableAreaPercentage / 100))}
-          layoutSuggestion={recommendation.layoutSuggestion}
-        />
+        <CardContent className="p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">System Summary</h2>
+          <SummaryBullets
+            systemSizeKW={recommendation.systemSizeKW}
+            panelCount={recommendation.panelCount}
+            annualProductionKWh={recommendation.estimatedAnnualProductionKWh}
+            roofArea={Math.round(roofAnalysis.roofAreaSqMeters * (roofAnalysis.usableAreaPercentage / 100))}
+            layoutSuggestion={recommendation.layoutSuggestion}
+          />
+        </CardContent>
       </Card>
 
       {/* Financial Analysis */}
       {recommendation.financials && (
         <Card>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Financial Analysis
-            <span className="text-sm font-normal text-gray-500 ml-2">(PEI Rates)</span>
-          </h2>
-          <FinancialSummary financials={recommendation.financials} />
+          <CardContent className="p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Financial Analysis
+              <span className="text-sm font-normal text-gray-500 ml-2">(PEI Rates)</span>
+            </h2>
+            <FinancialSummary financials={recommendation.financials} />
+          </CardContent>
         </Card>
       )}
 
       {/* Recommendations */}
       <Card>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Recommendations</h2>
-        <SuggestionsSection suggestions={recommendation.suggestions} />
+        <CardContent className="p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recommendations</h2>
+          <SuggestionsSection suggestions={recommendation.suggestions} />
+        </CardContent>
       </Card>
 
       {/* Reset Button */}
