@@ -177,6 +177,51 @@ function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const HOUSE_VERIFICATION_PROMPT = `As a Visual Sentry, your ONLY task is to determine if this image clearly depicts a REAL building with a visible roof.
+
+CRITICAL REJECTION CRITERIA (If any are true, return "INVALID"):
+1. COLLAGES: If there are multiple smaller images combined (e.g. vision boards).
+2. LOGOS/GRAPHICS: If it is a digital logo, icon, rocket, star, or abstract art.
+3. SUBJECT: If the main subject is a person, animal, car, or interior room.
+4. SCENERY: If there are trees/water but NO clear, dominant building in the center.
+
+CRITICAL APPROVAL CRITERIA (Only return "VALID" if all are true):
+1. A REAL building (house, shed, office) is the primary subject.
+2. The roof is clearly visible and occupies significant space.
+3. You can see real-world textures (shingles, metal, tiles).
+
+Respond with EXACTLY one word: "VALID" or "INVALID". No explanation.`;
+
+async function verifyIsHouse(
+  genAI: GoogleGenerativeAI,
+  base64Image: string,
+  mimeType: string
+): Promise<boolean> {
+  // Use a fast model for verification
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+  const imagePart = {
+    inlineData: {
+      data: base64Image,
+      mimeType: mimeType,
+    },
+  };
+
+  try {
+    const result = await Promise.race([
+      model.generateContent([HOUSE_VERIFICATION_PROMPT, imagePart]),
+      createTimeoutPromise(10000),
+    ]);
+
+    const text = result.response.text().trim().toUpperCase();
+    console.log(`[AI Sentry] Validation result: ${text}`);
+    return text.includes('VALID') && !text.includes('INVALID');
+  } catch (error) {
+    console.error('[AI Sentry] Validation failed, defaulting to cautious reject:', error);
+    return false;
+  }
+}
+
 /**
  * Try to analyze roof with a specific model
  */
@@ -186,6 +231,15 @@ async function tryAnalyzeWithModel(
   base64Image: string,
   mimeType: string
 ): Promise<AIAnalysisResult> {
+  // PRE-VALIDATION STEP
+  const isValid = await verifyIsHouse(genAI, base64Image, mimeType);
+  if (!isValid) {
+    return {
+      success: false,
+      error: 'Invalid Image: Our AI Sentry has flagged this as a non-architectural image. Please upload a clear photo of a building with a roof (aerial or angled).',
+    };
+  }
+
   const model = genAI.getGenerativeModel({ model: modelName });
 
   const imagePart = {
@@ -215,14 +269,6 @@ async function tryAnalyzeWithModel(
   }
 
   const parsed: AIRoofAnalysis = JSON.parse(jsonMatch[0]);
-
-  // STRICT VALIDATION: Reject any image that isn't explicitly a house
-  if (parsed.isHouse !== true) {
-    return {
-      success: false,
-      error: 'Invalid Image: This does not appear to be a clear photo of a residential or commercial building. For an accurate solar analysis, please upload a direct aerial or angled photo of a roof.',
-    };
-  }
 
   // Double check confidence for house detection if confidence is provided
   if (parsed.confidence < 30) {
@@ -532,6 +578,15 @@ async function tryAnalyzeExistingPanelsWithModel(
   base64Image: string,
   mimeType: string
 ): Promise<AIExistingPanelsResult> {
+  // PRE-VALIDATION STEP
+  const isValid = await verifyIsHouse(genAI, base64Image, mimeType);
+  if (!isValid) {
+    return {
+      success: false,
+      error: 'Invalid Image: Our AI Sentry has flagged this as a non-architectural image. To analyze improvements, please upload a direct photo of your current solar panels or a building with a roof.',
+    };
+  }
+
   const model = genAI.getGenerativeModel({ model: modelName });
 
   const imagePart = {
@@ -559,14 +614,6 @@ async function tryAnalyzeExistingPanelsWithModel(
   }
 
   const parsed = JSON.parse(jsonMatch[0]);
-
-  // STRICT VALIDATION: Reject any image that isn't explicitly house/building
-  if (parsed.isHouse !== true) {
-    return {
-      success: false,
-      error: 'Invalid Image: This does not appear to be a clear photo of an existing solar installation or a building. To analyze improvements, please upload a direct photo of your current panels.',
-    };
-  }
 
   // Validate and sanitize
   const sanitized: AIExistingPanelsAnalysis = {
