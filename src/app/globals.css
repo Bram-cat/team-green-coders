@@ -70,18 +70,24 @@
   :root {
     /* Green Palette from https://coolors.co/palette/132a13-31572c-4f772d-90a955-ecf39e */
     --background: 0 0% 100%;
-    --foreground: 120 38% 12%; /* #132a13 - Dark Forest Green */
+    --foreground: 120 38% 12%;
+    /* #132a13 - Dark Forest Green */
     --card: 0 0% 100%;
     --card-foreground: 120 38% 12%;
     --popover: 0 0% 100%;
     --popover-foreground: 120 38% 12%;
-    --primary: 113 33% 26%; /* #31572c - Hunter Green */
-    --primary-foreground: 65 78% 79%; /* #ecf39e - Light Yellow Green */
-    --secondary: 78 33% 50%; /* #90a955 - Olivine */
+    --primary: 113 33% 26%;
+    /* #31572c - Hunter Green */
+    --primary-foreground: 65 78% 79%;
+    /* #ecf39e - Light Yellow Green */
+    --secondary: 78 33% 50%;
+    /* #90a955 - Olivine */
     --secondary-foreground: 120 38% 12%;
-    --muted: 65 78% 79%; /* #ecf39e - Light Yellow Green */
+    --muted: 65 78% 79%;
+    /* #ecf39e - Light Yellow Green */
     --muted-foreground: 113 33% 26%;
-    --accent: 92 45% 32%; /* #4f772d - Fern Green */
+    --accent: 92 45% 32%;
+    /* #4f772d - Fern Green */
     --accent-foreground: 65 78% 79%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
@@ -92,19 +98,24 @@
   }
 
   .dark {
-    --background: 120 38% 12%; /* #132a13 - Dark Forest Green */
-    --foreground: 65 78% 79%; /* #ecf39e - Light Yellow Green */
+    --background: 120 38% 12%;
+    /* #132a13 - Dark Forest Green */
+    --foreground: 65 78% 79%;
+    /* #ecf39e - Light Yellow Green */
     --card: 113 33% 20%;
     --card-foreground: 65 78% 79%;
     --popover: 113 33% 20%;
     --popover-foreground: 65 78% 79%;
-    --primary: 78 33% 50%; /* #90a955 - Olivine */
+    --primary: 78 33% 50%;
+    /* #90a955 - Olivine */
     --primary-foreground: 120 38% 12%;
-    --secondary: 113 33% 26%; /* #31572c - Hunter Green */
+    --secondary: 113 33% 26%;
+    /* #31572c - Hunter Green */
     --secondary-foreground: 65 78% 79%;
     --muted: 113 33% 26%;
     --muted-foreground: 78 33% 65%;
-    --accent: 92 45% 32%; /* #4f772d - Fern Green */
+    --accent: 92 45% 32%;
+    /* #4f772d - Fern Green */
     --accent-foreground: 65 78% 79%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 65 78% 79%;
@@ -119,7 +130,68 @@
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'CabinetGrotesk', sans-serif;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-background/70 backdrop-blur-md border border-white/20;
+  }
+
+  .animate-in {
+    animation: animate-in 0.5s ease-out forwards;
+  }
+
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-[0_0_20px_rgba(var(--primary), 0.3)] hover:scale-[1.02];
+  }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: opacity 0.4s ease-out forwards;
+}
+
+@keyframes opacity {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }
