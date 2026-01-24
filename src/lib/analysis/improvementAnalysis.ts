@@ -2,7 +2,7 @@ import { ShadingLevel } from '@/types/analysis';
 import { analyzeExistingPanelsWithAI, isGeminiAvailable } from '@/lib/ai/geminiService';
 
 export interface ImprovementSuggestion {
-  type: 'repositioning' | 'cleaning' | 'additional_panels' | 'tree_trimming' | 'angle_adjustment' | 'maintenance';
+  type: string;
   title: string;
   description: string;
   priority: 'high' | 'medium' | 'low';
