@@ -42,25 +42,39 @@ export function SuggestionsSection({ suggestions }: SuggestionsSectionProps) {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 gap-6">
       {sortedSuggestions.map((suggestion, index) => (
         <div
           key={index}
-          className="flex gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+          className="group relative flex items-start gap-6 p-6 bg-white rounded-[1.5rem] border border-border/40 hover:border-primary/40 hover:shadow-xl transition-all duration-300"
         >
-          <div className="flex-shrink-0 w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm text-gray-600">
+          <div className="flex-shrink-0 w-12 h-12 bg-muted/50 rounded-2xl flex items-center justify-center shadow-inner text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
             {categoryIcons[suggestion.category]}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-medium text-gray-900">{suggestion.title}</h4>
+
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-lg font-black text-foreground tracking-tight group-hover:text-primary transition-colors">
+                {suggestion.title}
+              </h4>
               <span
-                className={`text-xs px-2 py-0.5 rounded-full border ${priorityColors[suggestion.priority]}`}
+                className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border shadow-sm ${suggestion.priority === 'high'
+                    ? 'bg-red-50 text-red-600 border-red-100'
+                    : suggestion.priority === 'medium'
+                      ? 'bg-amber-50 text-amber-600 border-amber-100'
+                      : 'bg-green-50 text-green-600 border-green-100'
+                  }`}
               >
                 {suggestion.priority}
               </span>
             </div>
-            <p className="text-sm text-gray-600">{suggestion.description}</p>
+            <p className="text-sm font-medium text-muted-foreground leading-relaxed">
+              {suggestion.description}
+            </p>
+          </div>
+
+          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
           </div>
         </div>
       ))}

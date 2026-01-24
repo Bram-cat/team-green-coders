@@ -177,11 +177,100 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* The 15% Impact Analysis Section - NEW */}
+      <section className="py-32 bg-background relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 translate-x-1/4" />
+
+        <div className="container px-4 relative z-10">
+          <div className="max-w-3xl mb-16 space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-[10px] font-black uppercase tracking-widest">
+              Strategic Simulation
+            </div>
+            <h2 className="text-5xl md:text-6xl font-black tracking-tighter text-foreground leading-[0.9]">
+              The <span className="text-primary italic">15%</span> Efficiency Leap
+            </h2>
+            <p className="text-xl text-muted-foreground font-medium">
+              What happens when we optimize an entire province? A 10-15% efficiency boost across PEI&apos;s solar fleet changes everything.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-border shadow-lg">
+                    <Image src="/heat_map_pei.png" alt="Current PEI Solar Heat Map" fill className="object-cover" />
+                    <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded-md text-[8px] font-black text-white uppercase tracking-widest">Current State</div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border-2 border-primary shadow-2xl shadow-primary/20">
+                    <Image src="/heat_map_improved.png" alt="Improved PEI Solar Heat Map" fill className="object-cover" />
+                    <div className="absolute top-3 left-3 px-2 py-1 bg-primary backdrop-blur-md rounded-md text-[8px] font-black text-white uppercase tracking-widest">Optimized Core</div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 bg-muted/30 rounded-2xl border border-border/50 italic text-sm font-medium text-muted-foreground">
+                Visualizing the thermal and production intensity shift across the Island when applying advanced MLPE and AI-routing.
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="border-none bg-white shadow-xl rounded-2xl p-6">
+                <h4 className="text-primary font-black uppercase tracking-widest text-[10px] mb-3">Community Scale</h4>
+                <h3 className="text-xl font-bold mb-2 tracking-tight">Power a Small Town</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Extra 13 GWh/year provides free energy for <strong>1,500 PEI homes</strong> without taking an extra inch of land.
+                </p>
+              </Card>
+              <Card className="border-none bg-white shadow-xl rounded-2xl p-6">
+                <h4 className="text-accent font-black uppercase tracking-widest text-[10px] mb-3">Fiscal Impact</h4>
+                <h3 className="text-xl font-bold mb-2 tracking-tight">$2.2 Million Saved</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Annual economic yield kept within the community instead of being sent off-island for power imports.
+                </p>
+              </Card>
+              <Card className="border-none bg-white shadow-xl rounded-2xl p-6">
+                <h4 className="text-blue-600 font-black uppercase tracking-widest text-[10px] mb-3">Independence</h4>
+                <h3 className="text-xl font-bold mb-2 tracking-tight">Cutting the Cord</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Reduces reliance on undersea cables and accelerates the <strong>2030 100% Renewable Goal</strong>.
+                </p>
+              </Card>
+              <Card className="border-none bg-white shadow-xl rounded-2xl p-6">
+                <h4 className="text-green-600 font-black uppercase tracking-widest text-[10px] mb-3">Ecology</h4>
+                <h3 className="text-xl font-bold mb-2 tracking-tight">1,000 Cars Off-Road</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Offsets 5,000 tonnes of CO2 annually &mdash; like permanently removing 1,000 cars from the Confederation Bridge.
+                </p>
+              </Card>
+            </div>
+          </div>
+
+          <div className="bg-foreground text-background rounded-3xl p-10 md:p-16 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] -mr-32 -mt-32" />
+            <div className="grid md:grid-cols-3 gap-12 items-center relative z-10">
+              <div className="md:col-span-2 space-y-6">
+                <h3 className="text-3xl font-black tracking-tighter text-white uppercase italic leading-none">The Future is Already <span className="text-primary">Landing</span></h3>
+                <p className="text-white/70 font-medium leading-relaxed max-w-2xl">
+                  Standard panels at 15% are yesterday&apos;s tech. With 22% being the current PEI standard and perovskite tandem cells aiming for 30%+, our vision for an optimized Island is effectively the new baseline.
+                </p>
+              </div>
+              <div>
+                <Button size="lg" className="w-full bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest rounded-xl h-16 shadow-xl shadow-primary/20" asChild>
+                  <Link href="/features/plan">Join the Wave</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Team & Credit Section */}
       <section className="py-24 bg-background border-t border-border">
         <div className="container px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-12">Meed the Team</h2>
+            <h2 className="text-3xl font-bold mb-12">Meet the Team</h2>
             <div className="relative aspect-video w-full rounded-3xl overflow-hidden shadow-2xl mb-12 group">
               <Image
                 src="/team_work.png"
