@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GeneratedPanelImage } from '@/lib/services/imageGenerationService';
 
 interface ImageGenerationPanelProps {
@@ -15,34 +15,38 @@ export function ImageGenerationPanel({ imagePrompts, address }: ImageGenerationP
 
     const currentPrompt = imagePrompts.find(p => p.angle === selectedAngle);
 
+    // Auto-generate all images on mount
+    useEffect(() => {
+        if (imagePrompts.length > 0 && Object.keys(generatedImages).length === 0) {
+            console.log('[Image Generation] Auto-generating all views...');
+            imagePrompts.forEach((prompt, index) => {
+                setTimeout(() => {
+                    handleGenerateImage(prompt.angle);
+                }, index * 500);
+            });
+        }
+    }, [imagePrompts]);
+
     const handleGenerateImage = async (angle: 'aerial' | 'south' | 'west') => {
         const prompt = imagePrompts.find(p => p.angle === angle);
-        if (!prompt) return;
+        if (!prompt || generatedImages[angle]) return;
 
         setGenerating(prev => ({ ...prev, [angle]: true }));
 
         try {
-            // Call your image generation API here
-            // For now, we'll show a placeholder
-            console.log('Generating image for angle:', angle);
+            console.log(`[Image Generation] Generating ${angle} view...`);
             console.log('Prompt:', prompt.prompt);
 
-            // Simulate API call
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // In production, you would call the actual image generation API
-            // const response = await fetch('/api/generate-image', {
-            //   method: 'POST',
-            //   headers: { 'Content-Type': 'application/json' },
-            //   body: JSON.stringify({ prompt: prompt.prompt }),
-            // });
-            // const data = await response.json();
-            // setGeneratedImages(prev => ({ ...prev, [angle]: data.imageUrl }));
+            // Create SVG placeholder
+            const colors = { aerial: '#3b82f6', south: '#10b981', west: '#f59e0b' };
+            const color = colors[angle];
+            const svg = `<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="${color}"/><text x="400" y="300" font-family="Arial" font-size="32" font-weight="bold" fill="white" text-anchor="middle">${angle.toUpperCase()} VIEW</text></svg>`;
 
-            // For now, set a placeholder
             setGeneratedImages(prev => ({
                 ...prev,
-                [angle]: 'https://via.placeholder.com/800x600?text=Solar+Panel+' + angle.toUpperCase() + '+View'
+                [angle]: `data:image/svg+xml;base64,${btoa(svg)}`
             }));
         } catch (error) {
             console.error('Failed to generate image:', error);
@@ -69,8 +73,8 @@ export function ImageGenerationPanel({ imagePrompts, address }: ImageGenerationP
                         key={prompt.angle}
                         onClick={() => setSelectedAngle(prompt.angle)}
                         className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${selectedAngle === prompt.angle
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                             }`}
                     >
                         {prompt.angle.charAt(0).toUpperCase() + prompt.angle.slice(1)} View

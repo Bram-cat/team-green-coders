@@ -1,7 +1,6 @@
 import { RoofAnalysisResult, SolarPotentialResult, SolarRecommendation, Suggestion } from '@/types/analysis';
 import { calculateFinancials, formatCurrency } from '@/lib/calculations/financialCalculations';
 import {
-  PEI_SOLAR_DATA,
   PEI_INSTALLATION_COSTS,
   PEI_ELECTRICITY_RATES,
   PEI_COMBINED_EFFICIENCY,
@@ -9,6 +8,7 @@ import {
 
 const PANEL_WATTAGE = PEI_INSTALLATION_COSTS.panelWattage; // 400W per panel
 const PANEL_AREA_SQM = PEI_INSTALLATION_COSTS.panelAreaSqM; // ~1.7 m² per panel
+const OPTIMAL_TILT_ANGLE = 44; // PEI optimal angle
 
 export function calculateRecommendation(
   roofAnalysis: RoofAnalysisResult,
@@ -26,8 +26,7 @@ export function calculateRecommendation(
   score -= complexityDeductions[roofAnalysis.complexity];
 
   // Deduct for steep or flat pitch (optimal is 30-45 degrees for PEI latitude)
-  const optimalPitch = PEI_SOLAR_DATA.optimalTiltAngle; // 44 degrees for PEI
-  const pitchDeviation = Math.abs(roofAnalysis.roofPitchDegrees - optimalPitch);
+  const pitchDeviation = Math.abs(roofAnalysis.roofPitchDegrees - OPTIMAL_TILT_ANGLE);
   score -= Math.min(pitchDeviation * 0.5, 15);
 
   // Bonus for high irradiance (PEI baseline is ~1150, so this may not apply often)
@@ -43,7 +42,7 @@ export function calculateRecommendation(
   const recommendedPanels = Math.min(maxPanels, solarPotential.optimalPanelCount);
   const systemSizeKW = (recommendedPanels * PANEL_WATTAGE) / 1000;
 
-  // Calculate annual production using PEI climate factors
+  // Calculate annual production using actual location-specific peak sun hours
   // Formula: System Size (kW) × Peak Sun Hours × 365 days × Combined Efficiency
   const estimatedAnnualProductionKWh = Math.round(
     systemSizeKW * solarPotential.peakSunHoursPerDay * 365 * PEI_COMBINED_EFFICIENCY
@@ -144,7 +143,7 @@ function generateSuggestions(roof: RoofAnalysisResult): Suggestion[] {
   }
 
   // Pitch/orientation suggestions
-  if (Math.abs(roof.roofPitchDegrees - PEI_SOLAR_DATA.optimalTiltAngle) > 15) {
+  if (Math.abs(roof.roofPitchDegrees - OPTIMAL_TILT_ANGLE) > 15) {
     suggestions.push({
       category: 'orientation',
       title: 'Consider tilt brackets',

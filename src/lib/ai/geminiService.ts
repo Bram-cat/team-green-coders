@@ -341,6 +341,18 @@ Write a personalized, enthusiastic 3-4 sentence summary for this homeowner. Be s
 Keep it under 100 words, warm and conversational, data-driven but not overly technical.`;
 
 /**
+ * Clean up AI-generated text by removing markdown artifacts
+ */
+function cleanAIText(text: string): string {
+  return text
+    .replace(/\*\*/g, '') // Remove bold markdown
+    .replace(/\*/g, '') // Remove italic markdown
+    .replace(/##\s/g, '') // Remove heading markers
+    .replace(/\n{3,}/g, '\n\n') // Normalize multiple newlines
+    .trim();
+}
+
+/**
  * Try to generate summary with a specific model
  */
 async function tryGenerateSummaryWithModel(
@@ -356,7 +368,10 @@ async function tryGenerateSummaryWithModel(
   ]);
 
   const response = result.response;
-  return response.text().trim();
+  const rawText = response.text().trim();
+
+  // Clean up the text to remove markdown formatting
+  return cleanAIText(rawText);
 }
 
 /**
