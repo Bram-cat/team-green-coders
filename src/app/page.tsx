@@ -48,10 +48,10 @@ export default function HomePage() {
             </svg>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-            Solar Panel Advisor
+            PEI Solar Panel Advisor
           </h1>
           <p className="text-gray-600 max-w-md mx-auto">
-            Upload a photo of your roof to get personalized solar panel installation recommendations
+            Get personalized solar panel recommendations for your Prince Edward Island property, including Maritime Electric savings estimates
           </p>
         </div>
 
@@ -102,7 +102,8 @@ export default function HomePage() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-400">
-          <p>Solar Panel Advisor MVP - For demonstration purposes only</p>
+          <p>PEI Solar Panel Advisor - Built for Prince Edward Island homeowners</p>
+          <p className="mt-1 text-xs">Calculations based on Maritime Electric rates and PEI solar data</p>
         </div>
       </div>
     </main>

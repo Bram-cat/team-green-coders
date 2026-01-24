@@ -23,6 +23,7 @@ export interface SolarRecommendation {
   layoutSuggestion: string;
   explanation: string;
   suggestions: Suggestion[];
+  financials?: import('@/lib/calculations/financialCalculations').FinancialAnalysis;
 }
 
 export interface Suggestion {
@@ -31,3 +32,6 @@ export interface Suggestion {
   description: string;
   priority: 'high' | 'medium' | 'low';
 }
+
+// Re-export financial types from the calculations module
+export type { FinancialAnalysis, IncentiveInfo } from '@/lib/calculations/financialCalculations';

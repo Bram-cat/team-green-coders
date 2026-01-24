@@ -19,7 +19,7 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
     street: '',
     city: '',
     postalCode: '',
-    country: '',
+    country: 'Canada', // Default to Canada for PEI
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -83,16 +83,22 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
           onFileSelect={setFile}
           error={errors.file}
         />
+        <p className="mt-2 text-xs text-gray-500">
+          Upload an aerial or angled photo of your roof. Google Maps satellite view works well.
+        </p>
       </div>
 
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900">Property Address</h3>
+        <p className="text-sm text-gray-500 -mt-2">
+          Enter your PEI property address for accurate solar estimates
+        </p>
 
         <Input
           label="Street Address"
           value={address.street}
           onChange={(e) => setAddress({ ...address, street: e.target.value })}
-          placeholder="123 Main Street"
+          placeholder="123 Queen Street"
           error={errors.street}
         />
 
@@ -101,14 +107,14 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
             label="City"
             value={address.city}
             onChange={(e) => setAddress({ ...address, city: e.target.value })}
-            placeholder="Los Angeles"
+            placeholder="Charlottetown"
             error={errors.city}
           />
           <Input
             label="Postal Code"
             value={address.postalCode}
             onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
-            placeholder="90001"
+            placeholder="C1A 1A1"
             error={errors.postalCode}
           />
         </div>
@@ -117,9 +123,21 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
           label="Country"
           value={address.country}
           onChange={(e) => setAddress({ ...address, country: e.target.value })}
-          placeholder="United States"
+          placeholder="Canada"
           error={errors.country}
         />
+      </div>
+
+      <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-700">
+        <div className="flex items-start gap-2">
+          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p>
+            This tool is optimized for <strong>Prince Edward Island</strong> properties.
+            Savings estimates are based on Maritime Electric rates and PEI solar conditions.
+          </p>
+        </div>
       </div>
 
       <Button

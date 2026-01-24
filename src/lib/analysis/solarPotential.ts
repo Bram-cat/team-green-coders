@@ -1,10 +1,18 @@
 import { Address, GeocodedLocation } from '@/types/address';
 import { SolarPotentialResult } from '@/types/analysis';
+import {
+  PEI_COORDINATES,
+  PEI_SOLAR_DATA,
+  PEI_CLIMATE_FACTORS,
+  PEI_COMBINED_EFFICIENCY,
+  PEI_INSTALLATION_COSTS,
+} from '@/lib/data/peiSolarData';
 
 /**
  * Geocodes an address to get latitude/longitude.
  *
- * TODO: Replace with actual geocoding API:
+ * For PEI MVP: Returns PEI coordinates for any address.
+ * TODO: Replace with actual geocoding API when API keys are provided:
  * - Google Maps Geocoding API
  * - Mapbox Geocoding API
  * - OpenStreetMap Nominatim
@@ -13,7 +21,7 @@ import { SolarPotentialResult } from '@/types/analysis';
  * @returns Promise<GeocodedLocation>
  */
 async function geocodeAddress(address: Address): Promise<GeocodedLocation> {
-  // TODO: Implement actual geocoding
+  // TODO: Implement actual geocoding when API key is available
   // const apiKey = process.env.GEOCODE_API_KEY;
   // const response = await fetch(
   //   `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
@@ -28,20 +36,22 @@ async function geocodeAddress(address: Address): Promise<GeocodedLocation> {
   // };
 
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise(resolve => setTimeout(resolve, 300));
 
-  // Mock geocoded location (defaults to a sunny location)
+  // Return PEI coordinates (Charlottetown area)
+  // In production, this would return actual geocoded coordinates
   return {
-    latitude: 34.0522 + (Math.random() - 0.5) * 10,
-    longitude: -118.2437 + (Math.random() - 0.5) * 10,
+    latitude: PEI_COORDINATES.latitude,
+    longitude: PEI_COORDINATES.longitude,
     formattedAddress: `${address.street}, ${address.city}, ${address.postalCode}, ${address.country}`,
   };
 }
 
 /**
- * Retrieves solar potential data for a given location.
+ * Retrieves solar potential data for a PEI location.
  *
- * TODO: Replace with actual solar irradiance API:
+ * Uses hardcoded PEI-specific solar data from Natural Resources Canada.
+ * TODO: Replace with actual solar irradiance API when API keys are provided:
  * - NREL PVWatts API (https://developer.nrel.gov/docs/solar/pvwatts/)
  * - SolarAnywhere API
  * - Google Project Sunroof API
@@ -52,7 +62,7 @@ async function geocodeAddress(address: Address): Promise<GeocodedLocation> {
 export async function getLocationSolarPotential(address: Address): Promise<SolarPotentialResult> {
   const location = await geocodeAddress(address);
 
-  // TODO: Implement actual solar potential API call
+  // TODO: Implement actual solar potential API call when API key is available
   // const apiKey = process.env.SOLAR_API_KEY;
   // const response = await fetch(
   //   `https://developer.nrel.gov/api/pvwatts/v8.json?api_key=${apiKey}` +
@@ -61,16 +71,86 @@ export async function getLocationSolarPotential(address: Address): Promise<Solar
   // const data = await response.json();
 
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
+  await new Promise(resolve => setTimeout(resolve, 500));
 
-  // Calculate mock solar potential based on latitude (higher at equator)
-  const latitudeFactor = 1 - Math.abs(location.latitude) / 90 * 0.5;
-  const baseIrradiance = 1400 * latitudeFactor; // kWh/m²/year
+  // Use PEI-specific solar data
+  const peakSunHours = PEI_SOLAR_DATA.averagePeakSunHours;
+  const averageIrradiance = PEI_SOLAR_DATA.annualGHI;
+
+  // Calculate optimal panel count based on a typical 20m² usable roof area
+  // This will be refined when combined with actual roof analysis
+  const assumedUsableAreaSqM = 25; // Conservative estimate for initial calculation
+  const panelsPerSqM = 1 / PEI_INSTALLATION_COSTS.panelAreaSqM;
+  const optimalPanelCount = Math.floor(assumedUsableAreaSqM * panelsPerSqM);
+
+  // Calculate yearly solar potential for a reference area
+  // Formula: Area (m²) × Annual Irradiance (kWh/m²) × System Efficiency
+  const yearlySolarPotentialKWh = Math.round(
+    assumedUsableAreaSqM * averageIrradiance * PEI_COMBINED_EFFICIENCY
+  );
 
   return {
-    yearlySolarPotentialKWh: Math.round(baseIrradiance * 20), // Assuming ~20m² usable
-    averageIrradianceKWhPerSqM: Math.round(baseIrradiance),
-    optimalPanelCount: Math.floor(Math.random() * 10) + 10, // 10-20 panels
-    peakSunHoursPerDay: 4 + Math.random() * 2, // 4-6 hours
+    yearlySolarPotentialKWh,
+    averageIrradianceKWhPerSqM: averageIrradiance,
+    optimalPanelCount,
+    peakSunHoursPerDay: peakSunHours,
+  };
+}
+
+/**
+ * Calculate expected annual production for a given system size
+ * Uses PEI-specific climate factors
+ *
+ * @param systemSizeKW - System size in kilowatts
+ * @returns Expected annual production in kWh
+ */
+export function calculateAnnualProduction(systemSizeKW: number): number {
+  // Base calculation: System Size (kW) × Peak Sun Hours × 365 days
+  const baseProduction = systemSizeKW * PEI_SOLAR_DATA.averagePeakSunHours * 365;
+
+  // Apply PEI climate efficiency factors
+  const effectiveProduction = baseProduction * PEI_COMBINED_EFFICIENCY;
+
+  return Math.round(effectiveProduction);
+}
+
+/**
+ * Get production estimate with detailed breakdown
+ *
+ * @param systemSizeKW - System size in kilowatts
+ * @returns Production estimate with breakdown factors
+ */
+export function getDetailedProductionEstimate(systemSizeKW: number): {
+  grossProduction: number;
+  snowLoss: number;
+  temperatureBonus: number;
+  soilingLoss: number;
+  inverterLoss: number;
+  systemLoss: number;
+  netProduction: number;
+} {
+  const grossProduction = systemSizeKW * PEI_SOLAR_DATA.averagePeakSunHours * 365;
+
+  const snowLoss = grossProduction * PEI_CLIMATE_FACTORS.snowLossFactor;
+  const temperatureBonus = grossProduction * (PEI_CLIMATE_FACTORS.temperatureCoefficient - 1);
+  const soilingLoss = grossProduction * PEI_CLIMATE_FACTORS.soilingFactor;
+  const inverterLoss = grossProduction * (1 - PEI_CLIMATE_FACTORS.inverterEfficiency);
+  const systemLoss = grossProduction * PEI_CLIMATE_FACTORS.systemLosses;
+
+  const netProduction = grossProduction
+    - snowLoss
+    + temperatureBonus
+    - soilingLoss
+    - inverterLoss
+    - systemLoss;
+
+  return {
+    grossProduction: Math.round(grossProduction),
+    snowLoss: Math.round(snowLoss),
+    temperatureBonus: Math.round(temperatureBonus),
+    soilingLoss: Math.round(soilingLoss),
+    inverterLoss: Math.round(inverterLoss),
+    systemLoss: Math.round(systemLoss),
+    netProduction: Math.round(netProduction),
   };
 }
