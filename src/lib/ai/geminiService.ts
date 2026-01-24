@@ -119,31 +119,31 @@ ${PEI_SOLAR_CONTEXT}
 TASK: Analyze this roof image and provide HIGHLY ACCURATE estimates based on the PEI solar data above.
 
 ANALYSIS REQUIREMENTS:
-1. Roof Area: Estimate based on typical PEI homes:
-   - 1200-1500 sq ft house = ~110-140 m² roof
-   - 1500-2000 sq ft house = ~140-190 m² roof
-   - 2000-2500 sq ft house = ~190-230 m² roof
+1. Roof Area: Estimate VISUALLY from the image. Do NOT use averages.
+   - Use standard door height (2m) or window width (1m) as reference scale.
+   - Count pixels/relative size to estimate total roof surface.
+   - Be precise. If it looks small, say 60m². If massive, say 250m².
 
 2. Usable Area: Calculate realistic usable percentage:
-   - Deduct 3 ft (0.9m) setback from all edges (fire code)
-   - Deduct area for obstacles (chimneys, vents, skylights)
-   - Deduct heavily shaded areas
-   - Typical result: 60-85% usable
+   - VISUALLY identify clear rectangular sections.
+   - Deduct 3 ft (0.9m) setback from all edges (fire code).
+   - Deduct observed obstacles (chimneys, vents).
+   - Deduct observed shading (trees, shadows).
 
 3. Shading Analysis:
-   - LOW: Minimal trees, south exposure, <10% shading
-   - MEDIUM: Some trees/buildings, 10-30% shading
-   - HIGH: Significant obstructions, >30% shading
+   - Identify actual tree shadows in the image.
+   - LOW: <10% obstructed
+   - MEDIUM: 10-30% obstructed
+   - HIGH: >30% obstructed
 
 4. Optimal Tilt Calculation:
-   - For PEI (46°N): Optimal is 44°
-   - If roof pitch < 25° or > 50°, note suboptimal production
-   - Flat roofs: Recommend tilt-up racking at 44°
+   - Estimate pitch visually. 30-45° is typical.
+   - PEI Optimal is 44°.
 
 5. Panel Count Estimation:
-   - Calculate: (Usable Area m² / 1.7 m²) / 1.2 (spacing)
-   - Or: (System Size kW × 1000 / 400W)
-   - Cross-check both methods
+   - Visualize 1.7m² (1m x 1.7m) rectangles on the usable roof.
+   - How many fit physically?
+   - Maximize south-facing placement.
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {
