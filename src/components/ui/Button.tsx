@@ -48,6 +48,19 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // Map 'primary' to 'default' if passed (legacy support)
     const effectiveVariant = variant === 'primary' ? 'default' : variant;
 
+    if (asChild) {
+      return (
+        <Comp
+          className={cn(buttonVariants({ variant: effectiveVariant, size, className }))}
+          ref={ref}
+          disabled={isLoading || props.disabled}
+          {...props}
+        >
+          {children}
+        </Comp>
+      )
+    }
+
     return (
       <Comp
         className={cn(buttonVariants({ variant: effectiveVariant, size, className }))}
