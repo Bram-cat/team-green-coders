@@ -39,12 +39,18 @@ export async function analyzeRoofImageFromBuffer(
         };
       } else {
         console.warn('AI analysis failed:', aiResult.error);
-        // If the error is high-confidence validation (like "not a house"), we should NOT fallback
-        if (aiResult.error.includes('does not appear to be') || aiResult.error.includes('professional solar analysis requires')) {
+
+        // Validation rejections (Invalid Image, Not a house, Blur, etc)
+        const isValidationError = aiResult.error.includes('Invalid Image') ||
+          aiResult.error.includes('Visual Clarity') ||
+          aiResult.error.includes('does not appear to be');
+
+        if (isValidationError) {
           throw new Error(aiResult.error);
         }
-        // For other AI failures (timeout, API error), we can fallback if demo mode is desired
-        console.log('Falling back to mock data due to AI service error...');
+
+        // For standard service failures (timeout, quota), fallback to mock for demo purposes
+        console.log('Falling back to mock data due to AI service interruption...');
       }
     } catch (error) {
       console.error('Error in AI roof analysis:', error);

@@ -113,63 +113,52 @@ CALCULATION FORMULAS:
 // ROOF IMAGE ANALYSIS (Gemini Vision)
 // ============================================
 
-const ROOF_ANALYSIS_PROMPT = `You are an expert solar installation analyst with deep knowledge of PEI solar data and calculations.
+const ROOF_ANALYSIS_PROMPT = `You are a strict solar installation auditor. Your first and most critical job is to validate the input image.
 
 ${PEI_SOLAR_CONTEXT}
 
-TASK: Analyze this roof image and provide HIGHLY ACCURATE estimates based on the PEI solar data above.
+TASK: Analyze this roof image for solar potential.
 
-CRITICAL: Your first task is to determine if this image actually contains a residential or commercial building with a visible roof suitable for solar panels.
+CRITICAL VALIDATION RULES:
+1. "isHouse" MUST BE FALSE IF:
+   - The image is a collage or collection of multiple smaller images (like a "Vision Board").
+   - The image is of a person, animal, food, or random object.
+   - The image is of general scenery (forests, ocean) without a CLEAR, dominant building in the foreground.
+   - The image is low quality, blurry, or does not clearly show the texture and shape of a roof.
+   - The image is a diagram, chart, or text-heavy graphic.
 
-ANALYSIS REQUIREMENTS:
-0. VALIDATION:
-   - "isHouse": Set to true ONLY if the image clearly shows a building with a roof. If it's a random object, scenery without buildings, a person, or just a placeholder, set to false.
+2. "isHouse" SHOULD ONLY BE TRUE IF:
+   - There is a CLEARly visible residential or commercial building.
+   - The building's roof occupies a significant portion of the frame or is the primary subject.
+   - You can distinguish roof features like shingles, peaks, or flat surfaces.
 
-1. ROOF AREA CALCULATION - MOST IMPORTANT:
-   - LOOK for reference objects: doors (2m height), windows (1-1.5m width), vehicles (4-5m length)
-   - Count visible features and estimate roof dimensions in meters
-   - Measure the roof length and width visually using these references
-   - Calculate: Length (m) × Width (m) = Total Roof Area
-   - Small bungalow roof: 60-90 m², Average home: 90-140 m², Large home: 140-200 m²
-   - BE PRECISE: If the roof looks small, give a small number. If large, give a large number.
+ANALYSIS REQUIREMENTS (Only if isHouse is true):
+1. ROOF AREA CALCULATION:
+   - LOOK for reference objects (doors, windows, cars) to estimate dimensions.
+   - Calculate: Length (m) × Width (m) = Total Roof Area.
+   - Range: Bungalow (60-90m²), Average (90-140m²), Large (140-200m²).
 
 2. OBSTACLES & USABLE AREA:
-   - **DETECT WINDOWS**: Count all roof windows/skylights and deduct their area (typical: 1-2 m² each)
-   - **DETECT DOORS**: Roof access doors, hatches (deduct 2-4 m² each)
-   - **DETECT CHIMNEYS**: Brick/metal chimneys (deduct 1-3 m² each + 1m clearance around)
-   - **DETECT VENTS**: Roof vents, exhaust pipes (deduct 0.5-1 m² each)
-   - **DETECT DORMERS**: Dormer windows (reduce usable area significantly)
-   - Fire code setback: Deduct 0.9m (3 ft) from all roof edges
-   - Calculate usable % = (Roof Area - All Obstacles - Setbacks) / Roof Area × 100
+   - DETECT skylights, chimneys, vents, and dormers.
+   - Fire code setback: Deduct 0.9m (3 ft) from all edges.
+   - Calculate usable % after ALL deductions.
 
 3. SHADING ANALYSIS:
-   - **VISUALLY DETECT** tree shadows, neighboring building shadows on the roof
-   - Count the percentage of roof covered by shadows
-   - LOW: <10% shadowed, MEDIUM: 10-30%, HIGH: >30%
-
-4. ROOF PITCH & ORIENTATION:
-   - Estimate roof angle from edge profile (flat=0-10°, low=10-25°, typical=25-40°, steep=40-60°)
-   - Determine which direction the roof faces (north/south/east/west)
-   - PEI optimal tilt: 44° for south-facing
-
-5. PANEL COUNT:
-   - Calculate: (Usable Area ÷ 1.7m²) ÷ 1.2 = Panel Count
-   - Each panel = 400W, 1.7m² with 20% spacing
-   - Typical PEI residential: 12-20 panels
+   - Detect tree or building shadows. LOW (<10%), MEDIUM (10-30%), HIGH (>30%).
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {
-  "isHouse": <true|false>,
-  "roofAreaSqMeters": <ACTUAL measured roof area 50-230>,
-  "usableAreaPercentage": <ACTUAL % after deducting ALL obstacles, setbacks 40-90>,
-  "shadingLevel": "<low|medium|high based on VISIBLE shadows>",
-  "roofPitchDegrees": <ACTUAL estimated angle 5-60>,
-  "complexity": "<simple|moderate|complex based on obstacles>",
-  "orientation": "<ACTUAL roof direction: north|south|east|west|flat>",
-  "obstacles": [<LIST ALL DETECTED: "chimney", "vent", "skylight", "window", "dormer", "tree shadow", "antenna">],
-  "confidence": <0-100, higher for clear views with visible references>,
-  "estimatedPanelCount": <CALCULATED from usable area 8-20>,
-  "optimalTiltAngle": <44 for PEI south-facing, or adjusted>
+  "isHouse": <true|false (MANDATORY strict check)>,
+  "roofAreaSqMeters": <number>,
+  "usableAreaPercentage": <number>,
+  "shadingLevel": "<low|medium|high>",
+  "roofPitchDegrees": <number>,
+  "complexity": "<simple|moderate|complex>",
+  "orientation": "<north|south|east|west|flat>",
+  "obstacles": [<string array>],
+  "confidence": <0-100>,
+  "estimatedPanelCount": <number>,
+  "optimalTiltAngle": <number>
 }`;
 
 /**
@@ -227,17 +216,25 @@ async function tryAnalyzeWithModel(
 
   const parsed: AIRoofAnalysis = JSON.parse(jsonMatch[0]);
 
-  // If AI explicitly says it's not a house, stop here
-  if (parsed.isHouse === false) {
+  // STRICT VALIDATION: Reject any image that isn't explicitly a house
+  if (parsed.isHouse !== true) {
     return {
       success: false,
-      error: 'This image does not appear to be a residential or commercial building with a visible roof. Professional solar analysis requires a clear view of the architectural structure.',
+      error: 'Invalid Image: This does not appear to be a clear photo of a residential or commercial building. For an accurate solar analysis, please upload a direct aerial or angled photo of a roof.',
+    };
+  }
+
+  // Double check confidence for house detection if confidence is provided
+  if (parsed.confidence < 30) {
+    return {
+      success: false,
+      error: 'Visual Clarity Error: The image quality or visibility is too low for our AI to accurately architect your solar future. Please provide a clearer photo.',
     };
   }
 
   // Validate and sanitize the response
   const sanitized: AIRoofAnalysis = {
-    isHouse: true, // We check for false above, so if we reach here it's highly likely true or it's a house
+    isHouse: true,
     roofAreaSqMeters: Math.max(50, Math.min(300, parsed.roofAreaSqMeters || 100)),
     usableAreaPercentage: Math.max(30, Math.min(95, parsed.usableAreaPercentage || 70)),
     shadingLevel: validateShadingLevel(parsed.shadingLevel),
@@ -444,73 +441,58 @@ export async function generateFinancialSummary(
 // EXISTING INSTALLATION ANALYSIS
 // ============================================
 
-const EXISTING_PANELS_ANALYSIS_PROMPT = `You are an expert solar installation analyst specializing in evaluating existing solar panel installations.
+const EXISTING_PANELS_ANALYSIS_PROMPT = `You are a strict solar installation auditor. Your first and most critical job is to validate the input image.
 
 ${PEI_SOLAR_CONTEXT}
 
-TASK: Analyze this image of an EXISTING solar panel installation and provide detailed improvement recommendations.
+TASK: Analyze this image for an EXISTING solar panel installation.
 
-CRITICAL: You must CAREFULLY COUNT EVERY SINGLE solar panel visible in this image. Count slowly and methodically.
+CRITICAL VALIDATION RULES:
+1. "isHouse" MUST BE FALSE IF:
+   - The image is a collage or collection of multiple smaller images (like a "Vision Board").
+   - The image is of a person, animal, food, or random object.
+   - The image is of general scenery (forests, ocean) without a CLEAR, dominant building in the foreground.
+   - The image is a diagram, chart, or text-heavy graphic.
 
-ANALYSIS REQUIREMENTS:
+2. "isHouse" SHOULD ONLY BE TRUE IF:
+   - There is a CLEARly visible building with EXISTING solar panels or a roof suitable for them.
+   - The building's roof occupies a significant portion of the frame.
 
-1. PANEL COUNT & SYSTEM SIZE - MOST CRITICAL:
-   - **CAREFULLY count EACH individual solar panel visible in the image**
-   - Count panels on ALL roof sections and orientations
-   - Look for panels that may be partially hidden or at different angles
-   - DO NOT estimate - count each blue/black rectangular panel individually
-   - DOUBLE CHECK your count before finalizing
-   - Typical residential panels are blue or black rectangles in a grid pattern
-   - Each panel is approximately 1.7m × 1m in size
-   - Calculate system size: (Exact Panel Count × 400W) ÷ 1000 = kW
-   - Example: 33 panels × 400W ÷ 1000 = 13.2 kW
+ANALYSIS REQUIREMENTS (Only if isHouse is true):
+1. PANEL COUNT:
+   - CAREFULLY count EACH individual solar panel. Count slowly and methodically.
+   - Each blue/black rectangular panel = 1 panel.
 
-2. CURRENT PLACEMENT ASSESSMENT:
-   - Orientation: Which direction do panels face?
-   - Tilt angle: Are panels at optimal 44° for PEI?
-   - Spacing: Are panels properly spaced?
-   - Coverage: Is usable roof area being maximized?
+2. EFFICIENCY & IMPROVEMENT:
+   - Assess panel condition, shading, and tilt.
+   - Provide concrete improvements (Cleaning, Trimming, Repositioning).
 
-3. EFFICIENCY ANALYSIS:
-   - Panel condition: Clean, dirty, damaged?
-   - Shading issues: Trees, structures causing shadows?
-   - Current estimated efficiency: 0-100%
-
-4. IMPROVEMENT OPPORTUNITIES - BE SPECIFIC:
-   - **Repositioning**: Can panels be moved to better orientation?
-   - **Angle Adjustment**: Is tilt angle optimal?
-   - **Cleaning**: Do panels appear dirty/covered in debris?
-   - **Additional Panels**: Is there unused roof space?
-   - **Tree Trimming**: Are trees causing shading?
-   - **Maintenance**: Visible wiring issues, panel damage?
-
-5. ROOF ANALYSIS (same as plan feature):
-   - Total roof area in square meters
-   - Usable area percentage
-   - Shading level, pitch, complexity
+3. ROOF ANALYSIS:
+   - Total area, usable %, and orientation.
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {
-  "currentPanelCount": <EXACT count of visible panels - count carefully! Typical range: 12-40>,
-  "estimatedSystemSizeKW": <currentPanelCount × 0.4>,
-  "currentEfficiency": <0-100, current performance %>,
-  "potentialEfficiency": <0-100, potential after improvements>,
-  "orientation": "<direction panels face>",
-  "panelCondition": "<Good|Fair|Needs Cleaning|Minor Damage|Major Issues>",
-  "roofAreaSqMeters": <total roof area>,
-  "usableAreaPercentage": <% usable>,
+  "isHouse": <true|false (MANDATORY strict check)>,
+  "currentPanelCount": <number>,
+  "estimatedSystemSizeKW": <number>,
+  "currentEfficiency": <number>,
+  "potentialEfficiency": <number>,
+  "orientation": "<string>",
+  "panelCondition": "<string>",
+  "roofAreaSqMeters": <number>,
+  "usableAreaPercentage": <number>,
   "shadingLevel": "<low|medium|high>",
-  "roofPitchDegrees": <angle>,
+  "roofPitchDegrees": <number>,
   "complexity": "<simple|moderate|complex>",
-  "estimatedAdditionalProduction": <kWh per year from improvements>,
+  "estimatedAdditionalProduction": <number>,
   "suggestions": [
     {
-      "type": "<repositioning|cleaning|additional_panels|tree_trimming|angle_adjustment|maintenance>",
-      "title": "<short title>",
-      "description": "<detailed recommendation>",
+      "type": "<string>",
+      "title": "<string>",
+      "description": "<string>",
       "priority": "<high|medium|low>",
-      "estimatedEfficiencyGain": <percentage points>,
-      "estimatedCost": <CAD>
+      "estimatedEfficiencyGain": <number>,
+      "estimatedCost": <number>
     }
   ],
   "confidence": <0-100>
@@ -576,7 +558,15 @@ async function tryAnalyzeExistingPanelsWithModel(
     };
   }
 
-  const parsed: AIExistingPanelsAnalysis = JSON.parse(jsonMatch[0]);
+  const parsed = JSON.parse(jsonMatch[0]);
+
+  // STRICT VALIDATION: Reject any image that isn't explicitly house/building
+  if (parsed.isHouse !== true) {
+    return {
+      success: false,
+      error: 'Invalid Image: This does not appear to be a clear photo of an existing solar installation or a building. To analyze improvements, please upload a direct photo of your current panels.',
+    };
+  }
 
   // Validate and sanitize
   const sanitized: AIExistingPanelsAnalysis = {
