@@ -120,7 +120,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
 
     if (userId) {
       try {
-        await supabase
+        const { error: dbError } = await supabase
           .from('analysis_history')
           .insert({
             user_id: userId,
@@ -168,9 +168,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
               recommendation,
             },
           });
+
+        if (dbError) {
+          console.error('Supabase insert error (Plan):', dbError);
+        }
       } catch (dbError) {
-        console.error('Failed to save to database:', dbError);
-        // Continue even if database save fails
+        console.error('Failed to save to database (Plan):', dbError);
       }
     }
 
