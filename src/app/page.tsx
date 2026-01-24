@@ -44,7 +44,7 @@ export default function HomePage() {
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Solar Energy in PEI</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Prince Edward Island is committed to a sustainable future. Here's why solar makes sense now.
+              Prince Edward Island is committed to a sustainable future. Here&apos;s why solar makes sense now.
             </p>
           </div>
 
@@ -52,7 +52,7 @@ export default function HomePage() {
             <Card className="bg-card">
               <CardHeader>
                 <CardTitle>Net Zero 2040</CardTitle>
-                <CardDescription>PEI's Ambitious Goal</CardDescription>
+                <CardDescription>PEI&apos;s Ambitious Goal</CardDescription>
               </CardHeader>
               <CardContent>
                 <p>PEI is targeting Net Zero by {pei_energy_context.general_overview.net_zero_target_year}. Solar plays a crucial role in reducing our reliance on imported power ({pei_energy_context.general_overview.current_electricity_sources.imported_from_new_brunswick}).</p>
@@ -89,7 +89,7 @@ export default function HomePage() {
             <div className="flex-1 space-y-6">
               <h2 className="text-3xl md:text-4xl font-bold">Plan Your System with AI</h2>
               <p className="text-xl text-muted-foreground">
-                Our advanced solar calculator analyzes your roof's potential using satellite imagery and PEI-specific solar data. Get an instant estimate on production, savings, and costs.
+                Our advanced solar calculator analyzes your roof&apos;s potential using satellite imagery and PEI-specific solar data. Get an instant estimate on production, savings, and costs.
               </p>
               <ul className="space-y-4">
                 <li className="flex items-center gap-3">

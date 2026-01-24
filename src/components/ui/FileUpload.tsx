@@ -44,6 +44,7 @@ export function FileUpload({ onFileSelect, error }: FileUploadProps) {
         <input {...getInputProps()} />
         {preview ? (
           <div className="space-y-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={preview}
               alt="Preview"

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import Image from 'next/image';
 
 interface SolarPanelVisualizationProps {
   uploadedImageUrl?: string;
@@ -66,10 +67,12 @@ export function SolarPanelVisualization({
           </h4>
           <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-video">
             {uploadedImageUrl ? (
-              <img
+              <Image
                 src={uploadedImageUrl}
                 alt="Uploaded roof"
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                unoptimized
               />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400">
@@ -218,10 +221,9 @@ export function SolarPanelVisualization({
             <span className="text-xs text-gray-500">Confidence:</span>
             <div className="w-20 bg-gray-200 rounded-full h-2">
               <div
-                className={`h-2 rounded-full ${
-                  aiConfidence >= 70 ? 'bg-green-500' :
+                className={`h-2 rounded-full ${aiConfidence >= 70 ? 'bg-green-500' :
                   aiConfidence >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                }`}
+                  }`}
                 style={{ width: `${aiConfidence}%` }}
               />
             </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { GeneratedPanelImage } from '@/lib/services/imageGenerationService';
 
 interface ImageGenerationPanelProps {
@@ -78,11 +79,15 @@ export function ImageGenerationPanel({ imagePrompts, address }: ImageGenerationP
             <div className="bg-gray-50 rounded-lg p-6 min-h-[400px] flex flex-col items-center justify-center border border-gray-200">
                 {generatedImages[selectedAngle] ? (
                     <div className="w-full space-y-4">
-                        <img
-                            src={generatedImages[selectedAngle]}
-                            alt={`${selectedAngle} view of solar panel installation`}
-                            className="w-full rounded-lg shadow-lg"
-                        />
+                        <div className="relative aspect-video w-full">
+                            <Image
+                                src={generatedImages[selectedAngle]}
+                                alt={`${selectedAngle} view of solar panel installation`}
+                                fill
+                                className="rounded-lg shadow-lg object-cover"
+                                unoptimized
+                            />
+                        </div>
                         <p className="text-sm text-gray-600 text-center">
                             {currentPrompt?.description}
                         </p>
