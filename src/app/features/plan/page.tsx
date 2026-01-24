@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { AnalysisForm } from '@/components/forms/AnalysisForm';
 import { ResultsDisplay } from '@/components/results/ResultsDisplay';
 import { AnalyzeResponse } from '@/types/api';
+import { useUser } from '@clerk/nextjs';
+import { supabase } from '@/lib/supabase';
 
 type AppState = 'form' | 'loading' | 'results' | 'error';
 
