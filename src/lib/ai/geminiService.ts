@@ -118,45 +118,53 @@ ${PEI_SOLAR_CONTEXT}
 
 TASK: Analyze this roof image and provide HIGHLY ACCURATE estimates based on the PEI solar data above.
 
+CRITICAL: Your analysis must be based on ACTUAL VISUAL OBSERVATION of the image, not assumptions or averages.
+
 ANALYSIS REQUIREMENTS:
-1. Roof Area: Estimate VISUALLY from the image. Do NOT use averages.
-   - Use standard door height (2m) or window width (1m) as reference scale.
-   - Count pixels/relative size to estimate total roof surface.
-   - Be precise. If it looks small, say 60m². If massive, say 250m².
+1. ROOF AREA CALCULATION - MOST IMPORTANT:
+   - LOOK for reference objects: doors (2m height), windows (1-1.5m width), vehicles (4-5m length)
+   - Count visible features and estimate roof dimensions in meters
+   - Measure the roof length and width visually using these references
+   - Calculate: Length (m) × Width (m) = Total Roof Area
+   - Small bungalow roof: 60-90 m², Average home: 90-140 m², Large home: 140-200 m²
+   - BE PRECISE: If the roof looks small, give a small number. If large, give a large number.
 
-2. Usable Area: Calculate realistic usable percentage:
-   - VISUALLY identify clear rectangular sections.
-   - Deduct 3 ft (0.9m) setback from all edges (fire code).
-   - Deduct observed obstacles (chimneys, vents).
-   - Deduct observed shading (trees, shadows).
+2. OBSTACLES & USABLE AREA:
+   - **DETECT WINDOWS**: Count all roof windows/skylights and deduct their area (typical: 1-2 m² each)
+   - **DETECT DOORS**: Roof access doors, hatches (deduct 2-4 m² each)
+   - **DETECT CHIMNEYS**: Brick/metal chimneys (deduct 1-3 m² each + 1m clearance around)
+   - **DETECT VENTS**: Roof vents, exhaust pipes (deduct 0.5-1 m² each)
+   - **DETECT DORMERS**: Dormer windows (reduce usable area significantly)
+   - Fire code setback: Deduct 0.9m (3 ft) from all roof edges
+   - Calculate usable % = (Roof Area - All Obstacles - Setbacks) / Roof Area × 100
 
-3. Shading Analysis:
-   - Identify actual tree shadows in the image.
-   - LOW: <10% obstructed
-   - MEDIUM: 10-30% obstructed
-   - HIGH: >30% obstructed
+3. SHADING ANALYSIS:
+   - **VISUALLY DETECT** tree shadows, neighboring building shadows on the roof
+   - Count the percentage of roof covered by shadows
+   - LOW: <10% shadowed, MEDIUM: 10-30%, HIGH: >30%
 
-4. Optimal Tilt Calculation:
-   - Estimate pitch visually. 30-45° is typical.
-   - PEI Optimal is 44°.
+4. ROOF PITCH & ORIENTATION:
+   - Estimate roof angle from edge profile (flat=0-10°, low=10-25°, typical=25-40°, steep=40-60°)
+   - Determine which direction the roof faces (north/south/east/west)
+   - PEI optimal tilt: 44° for south-facing
 
-5. Panel Count Estimation:
-   - Visualize 1.7m² (1m x 1.7m) rectangles on the usable roof.
-   - How many fit physically?
-   - Maximize south-facing placement.
+5. PANEL COUNT:
+   - Calculate: (Usable Area ÷ 1.7m²) ÷ 1.2 = Panel Count
+   - Each panel = 400W, 1.7m² with 20% spacing
+   - Typical PEI residential: 12-20 panels
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {
-  "roofAreaSqMeters": <total roof area 70-230>,
-  "usableAreaPercentage": <realistic % after setbacks 60-90>,
-  "shadingLevel": "<low|medium|high>",
-  "roofPitchDegrees": <angle 15-50>,
-  "complexity": "<simple|moderate|complex>",
-  "orientation": "<north|south|east|west|flat>",
-  "obstacles": [<"chimney"|"vent"|"skylight"|"dormer"|"tree shadow"|"antenna">],
-  "confidence": <0-100, higher for clear aerial views>,
-  "estimatedPanelCount": <calculated panel count>,
-  "optimalTiltAngle": <44 for PEI, or adjusted if roof pitch dictates>
+  "roofAreaSqMeters": <ACTUAL measured roof area 50-230>,
+  "usableAreaPercentage": <ACTUAL % after deducting ALL obstacles, setbacks 40-90>,
+  "shadingLevel": "<low|medium|high based on VISIBLE shadows>",
+  "roofPitchDegrees": <ACTUAL estimated angle 5-60>,
+  "complexity": "<simple|moderate|complex based on obstacles>",
+  "orientation": "<ACTUAL roof direction: north|south|east|west|flat>",
+  "obstacles": [<LIST ALL DETECTED: "chimney", "vent", "skylight", "window", "dormer", "tree shadow", "antenna">],
+  "confidence": <0-100, higher for clear views with visible references>,
+  "estimatedPanelCount": <CALCULATED from usable area 8-20>,
+  "optimalTiltAngle": <44 for PEI south-facing, or adjusted>
 }`;
 
 /**

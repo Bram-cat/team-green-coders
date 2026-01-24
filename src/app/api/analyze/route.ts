@@ -3,7 +3,6 @@ import { analyzeRoofImageFromBuffer } from '@/lib/analysis/roofAnalysis';
 import { getLocationSolarPotential } from '@/lib/analysis/solarPotential';
 import { calculateRecommendation } from '@/lib/utils/scoreCalculation';
 import { generateFinancialSummary, convertToRoofAnalysisResult } from '@/lib/ai/geminiService';
-import { generateSolarPanelImagePrompts } from '@/lib/services/imageGenerationService';
 import { Address } from '@/types/address';
 import { AnalyzeAPIResponse } from '@/types/api';
 
@@ -114,26 +113,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
       }
     }
 
-    // Generate image prompts for frontend to use
-    const addressString = `${address.street}, ${address.city}, ${address.postalCode}`;
-
-    // Create AIRoofAnalysis for image generation
-    // Use the actual calculated panel count from the recommendation
-    const aiRoofData = roofAnalysisResult.aiAnalysis || {
-      roofAreaSqMeters: roofAnalysis.roofAreaSqMeters,
-      usableAreaPercentage: roofAnalysis.usableAreaPercentage,
-      shadingLevel: roofAnalysis.shadingLevel,
-      roofPitchDegrees: roofAnalysis.roofPitchDegrees,
-      complexity: roofAnalysis.complexity,
-      orientation: 'south' as const, // Default orientation
-      obstacles: [],
-      confidence: roofAnalysisResult.aiConfidence || 50,
-      estimatedPanelCount: recommendation.panelCount, // Use actual calculated panel count
-      optimalTiltAngle: 44, // PEI optimal angle
-    };
-
-    const imagePrompts = generateSolarPanelImagePrompts(aiRoofData, addressString);
-
     return NextResponse.json({
       success: true,
       data: {
@@ -148,8 +127,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
         // Image for visualization
         uploadedImageBase64: imageDataUrl,
         aiSummary,
-        // Image generation prompts
-        imagePrompts,
       },
     });
 

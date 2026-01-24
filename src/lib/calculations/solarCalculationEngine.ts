@@ -1,11 +1,12 @@
 /**
- * Solar Calculation Engine - Complete Rebuild
- * 
- * This is a clean, validated calculation system that ensures:
- * - All values are positive and realistic
- * - Savings are capped at $1000-$2000/year for PEI
- * - Consistent data flow throughout
- * - Proper validation at each step
+ * Solar Calculation Engine - PEI Methodology
+ *
+ * Based on calculation.json and information.json:
+ * - Uses PEI Photovoltaic Potential: 1459 kWh/kWp (similar to Halifax, NS)
+ * - Residential system median: 7.2 kW (18 panels × 400W)
+ * - Electricity rate: $0.174/kWh (17.4 cents CAD)
+ * - Installation cost: $3.00-$3.50/W for cash purchases
+ * - Panel specifications: 400W, 1.7 m², 21% efficiency
  */
 
 import { PEI_ELECTRICITY_RATES, PEI_INSTALLATION_COSTS } from '@/lib/data/peiSolarData';
@@ -39,15 +40,15 @@ export interface CalculationInputs {
 }
 
 // ============================================
-// CONSTANTS
+// CONSTANTS - Based on PEI Data
 // ============================================
 
-const PANEL_WATTAGE = 400; // Watts per panel
-const PANEL_AREA = 1.7; // m² per panel
-const SYSTEM_EFFICIENCY = 0.85; // 85% overall efficiency (realistic for PEI)
-const MAX_ANNUAL_SAVINGS = 2000; // Cap at $2000/year for realism
-const MIN_ANNUAL_SAVINGS = 500; // Minimum to be worth it
-const ELECTRICITY_RATE = 0.1712; // $/kWh for PEI
+const PANEL_WATTAGE = 400; // Watts per panel (standard 2024)
+const PANEL_AREA = 1.7; // m² per panel (standard size)
+const PEI_PV_POTENTIAL = 1459; // kWh/kWp annual (Halifax/Maritime climate)
+const ELECTRICITY_RATE = 0.174; // $/kWh for PEI (Maritime Electric)
+const INSTALLATION_COST_PER_WATT = 3.00; // $/W (cash purchase median)
+const FIRE_CODE_SETBACK = 0.9; // meters (3 ft from edges)
 
 // ============================================
 // MAIN CALCULATION FUNCTION
@@ -81,32 +82,34 @@ export function calculateSolarSystem(inputs: CalculationInputs): {
 // ============================================
 
 function calculateSystemSpecs(inputs: CalculationInputs): SolarSystemSpecs {
-    // Calculate usable roof area
-    const usableArea = inputs.roofAreaSqM * (inputs.usablePercentage / 100);
+    // Step 1: Calculate usable roof area (after fire code setbacks and obstacles)
+    // Each edge loses 0.9m setback, so rectangular roof loses ~2-4 m² typically
+    const usableAreaSqM = inputs.roofAreaSqM * (inputs.usablePercentage / 100);
 
-    // Calculate maximum panels that fit
-    const maxPanels = Math.floor(usableArea / PANEL_AREA);
+    // Step 2: Calculate maximum panels that physically fit
+    // Each panel needs 1.7 m², plus spacing (~20% extra for mounting and maintenance)
+    const areaPerPanelWithSpacing = PANEL_AREA * 1.2;
+    const maxPanelsFit = Math.floor(usableAreaSqM / areaPerPanelWithSpacing);
 
-    // Limit panel count to reasonable size for PEI homes (typically 10-20 panels)
-    const panelCount = Math.min(maxPanels, 20);
+    // Step 3: Limit to realistic residential range
+    // PEI data: median 7.2 kW (18 panels), 80th percentile 11 kW (27 panels)
+    // Absolute max for residential: 20 panels (8 kW system)
+    const panelCount = Math.min(maxPanelsFit, 20);
 
-    // Calculate system size in kW
+    // Step 4: Calculate system size in kW
     const systemSizeKW = (panelCount * PANEL_WATTAGE) / 1000;
 
-    // Calculate annual production
-    // Formula: System Size (kW) × Peak Sun Hours × 365 days × Efficiency
-    const annualProductionKWh = Math.round(
-        systemSizeKW * inputs.peakSunHoursPerDay * 365 * SYSTEM_EFFICIENCY
-    );
-
-    // Ensure production is positive and realistic
-    const validatedProduction = Math.max(1000, Math.min(annualProductionKWh, 15000));
+    // Step 5: Calculate annual production using PEI Photovoltaic Potential
+    // Formula from calculation.json:
+    // Annual Production (kWh) = System Size (kW) × PV Potential (kWh/kWp)
+    // For PEI: 1459 kWh/kWp (similar to Halifax, NS)
+    const annualProductionKWh = Math.round(systemSizeKW * PEI_PV_POTENTIAL);
 
     return {
         panelCount,
         systemSizeKW: Math.round(systemSizeKW * 10) / 10,
         roofAreaUsedSqM: Math.round(panelCount * PANEL_AREA),
-        annualProductionKWh: validatedProduction,
+        annualProductionKWh,
     };
 }
 
@@ -118,36 +121,30 @@ function calculateFinancials(
     specs: SolarSystemSpecs,
     inputs: CalculationInputs
 ): FinancialResults {
-    // System cost: $3/watt is typical for PEI
-    const systemCost = Math.round(specs.systemSizeKW * 1000 * 3.0);
+    // System cost: $3.00/W for cash purchase (PEI median)
+    const systemCost = Math.round(specs.systemSizeKW * 1000 * INSTALLATION_COST_PER_WATT);
 
-    // Calculate annual savings
-    let annualSavings = specs.annualProductionKWh * ELECTRICITY_RATE;
+    // Annual savings: Production × Maritime Electric rate
+    // Formula from calculation.json: Annual Savings = Production (kWh) × Rate ($/kWh)
+    let annualSavings = Math.round(specs.annualProductionKWh * ELECTRICITY_RATE);
 
-    // If user provided monthly bill, use that to cap savings realistically
+    // If user provided monthly bill, cap at realistic consumption offset
     if (inputs.monthlyElectricityBill) {
         const annualBill = inputs.monthlyElectricityBill * 12;
-        // Can't save more than you spend, cap at 80% of annual bill
-        annualSavings = Math.min(annualSavings, annualBill * 0.8);
+        // Most PEI homes won't save more than their annual bill
+        // Cap at 100% of annual bill (net metering allows this)
+        annualSavings = Math.min(annualSavings, annualBill);
     }
-
-    // Cap savings at realistic maximum for PEI
-    annualSavings = Math.min(annualSavings, MAX_ANNUAL_SAVINGS);
-    annualSavings = Math.max(annualSavings, MIN_ANNUAL_SAVINGS);
-    annualSavings = Math.round(annualSavings);
 
     const monthlySavings = Math.round(annualSavings / 12);
 
-    // Payback period
+    // Payback period: Net Cost ÷ Annual Savings
     const paybackYears = systemCost / annualSavings;
 
-    // 25-year savings (with 3% rate increase, 0.5% degradation)
-    const twentyFiveYearSavings = calculate25YearSavings(
-        annualSavings,
-        systemCost
-    );
+    // 25-year savings (with 3% electricity rate increase, 0.5% panel degradation)
+    const twentyFiveYearSavings = calculate25YearSavings(annualSavings, systemCost);
 
-    // ROI
+    // ROI: (Total Savings - Initial Cost) ÷ Initial Cost × 100
     const roi = ((twentyFiveYearSavings - systemCost) / systemCost) * 100;
 
     return {
@@ -166,31 +163,36 @@ function calculateFinancials(
 
 function validateInputs(inputs: CalculationInputs): CalculationInputs {
     return {
-        roofAreaSqM: Math.max(20, Math.min(inputs.roofAreaSqM, 300)),
-        usablePercentage: Math.max(50, Math.min(inputs.usablePercentage, 95)),
-        peakSunHoursPerDay: Math.max(2.0, Math.min(inputs.peakSunHoursPerDay, 6.0)),
+        // PEI homes: typical 50-200 m² roof area
+        roofAreaSqM: Math.max(30, Math.min(inputs.roofAreaSqM, 250)),
+        // Usable percentage: 40-95% depending on obstacles, setbacks
+        usablePercentage: Math.max(40, Math.min(inputs.usablePercentage, 95)),
+        // PEI peak sun hours: 3.5-4.5 hours typical
+        peakSunHoursPerDay: Math.max(3.0, Math.min(inputs.peakSunHoursPerDay, 5.0)),
+        // Monthly bills: $80-$400 typical for PEI residential
         monthlyElectricityBill: inputs.monthlyElectricityBill
-            ? Math.max(50, Math.min(inputs.monthlyElectricityBill, 500))
+            ? Math.max(50, Math.min(inputs.monthlyElectricityBill, 600))
             : undefined,
+        // Annual consumption: 5,000-20,000 kWh typical
         annualConsumptionKWh: inputs.annualConsumptionKWh
-            ? Math.max(3000, Math.min(inputs.annualConsumptionKWh, 20000))
+            ? Math.max(3000, Math.min(inputs.annualConsumptionKWh, 25000))
             : undefined,
     };
 }
 
 function validateOutputs(specs: SolarSystemSpecs, financials: FinancialResults): void {
-    // Ensure all values are positive
-    if (specs.panelCount <= 0) throw new Error('Invalid panel count');
-    if (specs.systemSizeKW <= 0) throw new Error('Invalid system size');
-    if (specs.annualProductionKWh <= 0) throw new Error('Invalid production');
+    // Ensure all values are positive and realistic
+    if (specs.panelCount <= 0 || specs.panelCount > 25) {
+        throw new Error(`Invalid panel count: ${specs.panelCount}. Expected 1-25 panels.`);
+    }
+    if (specs.systemSizeKW <= 0 || specs.systemSizeKW > 10) {
+        throw new Error(`Invalid system size: ${specs.systemSizeKW} kW. Expected 0.4-10 kW.`);
+    }
+    if (specs.annualProductionKWh <= 0 || specs.annualProductionKWh > 15000) {
+        throw new Error(`Invalid production: ${specs.annualProductionKWh} kWh. Expected 500-15,000 kWh.`);
+    }
     if (financials.systemCost <= 0) throw new Error('Invalid system cost');
     if (financials.annualSavings <= 0) throw new Error('Invalid savings');
-
-    // Ensure realistic ranges
-    if (specs.panelCount > 30) throw new Error('Too many panels');
-    if (financials.annualSavings > MAX_ANNUAL_SAVINGS) {
-        throw new Error('Savings exceed realistic maximum');
-    }
 }
 
 function calculate25YearSavings(annualSavings: number, systemCost: number): number {
