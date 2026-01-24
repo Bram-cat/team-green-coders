@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { analyzeRoofImageFromBuffer } from '@/lib/analysis/roofAnalysis';
 import { getLocationSolarPotential } from '@/lib/analysis/solarPotential';
 import { calculateRecommendation } from '@/lib/utils/scoreCalculation';
-import { generateFinancialSummary } from '@/lib/ai/geminiService';
+import { generateFinancialSummary, convertToRoofAnalysisResult } from '@/lib/ai/geminiService';
+import { generateSolarPanelImagePrompts } from '@/lib/services/imageGenerationService';
 import { Address } from '@/types/address';
 import { AnalyzeAPIResponse } from '@/types/api';
 
@@ -93,13 +94,36 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
         aiSummary = await generateFinancialSummary(
           recommendation.financials,
           roofAnalysis,
-          recommendation.systemSizeKW
+          recommendation.systemSizeKW,
+          {
+            lat: solarPotentialResult.geocodedLocation.latitude,
+            lon: solarPotentialResult.geocodedLocation.longitude,
+          }
         );
       } catch (summaryError) {
         console.error('Failed to generate AI summary:', summaryError);
         // Continue without AI summary
       }
     }
+
+    // Generate image prompts for frontend to use
+    const addressString = `${address.street}, ${address.city}, ${address.postalCode}`;
+
+    // Create AIRoofAnalysis for image generation
+    const aiRoofData = roofAnalysisResult.aiAnalysis || {
+      roofAreaSqMeters: roofAnalysis.roofAreaSqMeters,
+      usableAreaPercentage: roofAnalysis.usableAreaPercentage,
+      shadingLevel: roofAnalysis.shadingLevel,
+      roofPitchDegrees: roofAnalysis.roofPitchDegrees,
+      complexity: roofAnalysis.complexity,
+      orientation: 'south' as const, // Default orientation
+      obstacles: [],
+      confidence: roofAnalysisResult.aiConfidence || 50,
+      estimatedPanelCount: solarPotential.optimalPanelCount,
+      optimalTiltAngle: 44, // PEI optimal angle
+    };
+
+    const imagePrompts = generateSolarPanelImagePrompts(aiRoofData, addressString);
 
     return NextResponse.json({
       success: true,
@@ -115,6 +139,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
         // Image for visualization
         uploadedImageBase64: imageDataUrl,
         aiSummary,
+        // Image generation prompts
+        imagePrompts,
       },
     });
 
