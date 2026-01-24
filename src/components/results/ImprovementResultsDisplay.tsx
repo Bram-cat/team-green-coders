@@ -6,9 +6,7 @@ import { RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
 interface ImprovementResultsDisplayProps {
   currentInstallation: {
     panelCount: number;
-    panelCountMax: number;
     estimatedSystemSizeKW: number;
-    estimatedSystemSizeKWMax: number;
     currentEfficiency: number;
     orientation: string;
     panelCondition: string;
