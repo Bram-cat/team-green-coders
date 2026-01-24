@@ -96,7 +96,7 @@ export function ResultsDisplay({
           systemSizeKW={recommendation.systemSizeKW}
           panelCount={recommendation.panelCount}
           annualProductionKWh={recommendation.estimatedAnnualProductionKWh}
-          roofArea={roofAnalysis.roofAreaSqMeters}
+          roofArea={Math.round(roofAnalysis.roofAreaSqMeters * (roofAnalysis.usableAreaPercentage / 100))}
           layoutSuggestion={recommendation.layoutSuggestion}
         />
       </Card>

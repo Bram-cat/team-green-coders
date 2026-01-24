@@ -57,19 +57,19 @@ export function FinancialSummary({ financials }: FinancialSummaryProps) {
           </div>
         </div>
 
-        {/* 25-Year Savings */}
+        {/* Net Wealth Generation */}
         <div className="bg-purple-50 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
-            <span className="text-sm font-medium text-purple-600 opacity-80">25-Year Savings</span>
+            <span className="text-sm font-medium text-purple-600 opacity-80">Net Wealth Generated</span>
           </div>
           <div className="text-xl font-bold text-purple-700">
             {formatCurrency(financials.twentyFiveYearSavings)}
           </div>
-          <div className="text-xs text-purple-500 mt-1">
-            {financials.returnOnInvestment}% ROI
+          <div className="text-xs text-purple-500 mt-1 font-semibold">
+            {financials.returnOnInvestment}% Return on Investment
           </div>
         </div>
       </div>
@@ -100,16 +100,14 @@ export function FinancialSummary({ financials }: FinancialSummaryProps) {
           {financials.availableIncentives.map((incentive, index) => (
             <div
               key={index}
-              className={`p-3 rounded-lg border ${
-                incentive.available
+              className={`p-3 rounded-lg border ${incentive.available
                   ? 'bg-green-50 border-green-200'
                   : 'bg-gray-50 border-gray-200'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between mb-1">
-                <span className={`font-medium text-sm ${
-                  incentive.available ? 'text-green-800' : 'text-gray-500'
-                }`}>
+                <span className={`font-medium text-sm ${incentive.available ? 'text-green-800' : 'text-gray-500'
+                  }`}>
                   {incentive.name}
                 </span>
                 {incentive.available ? (
@@ -122,9 +120,8 @@ export function FinancialSummary({ financials }: FinancialSummaryProps) {
                   </span>
                 )}
               </div>
-              <p className={`text-xs ${
-                incentive.available ? 'text-green-700' : 'text-gray-500'
-              }`}>
+              <p className={`text-xs ${incentive.available ? 'text-green-700' : 'text-gray-500'
+                }`}>
                 {incentive.description}
               </p>
               {incentive.potentialValue && incentive.available && (
