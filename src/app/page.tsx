@@ -88,7 +88,6 @@ export default function HomePage() {
             geocodedLocation={results.geocodedLocation}
             uploadedImageBase64={results.uploadedImageBase64}
             aiSummary={results.aiSummary}
-            imagePrompts={results.imagePrompts}
           />
         )}
 

@@ -1,6 +1,5 @@
 import { SolarRecommendation, RoofAnalysisResult, SolarPotentialResult } from './analysis';
 import { GeocodedLocation } from './address';
-import { GeneratedPanelImage } from '@/lib/services/imageGenerationService';
 
 export interface AnalyzeResponse {
   success: true;
@@ -16,7 +15,6 @@ export interface AnalyzeResponse {
     // Image for visualization
     uploadedImageBase64?: string;
     aiSummary?: string;
-    imagePrompts?: GeneratedPanelImage[];
   };
 }
 
