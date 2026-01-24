@@ -427,6 +427,214 @@ export async function generateFinancialSummary(
 }
 
 // ============================================
+// EXISTING INSTALLATION ANALYSIS
+// ============================================
+
+const EXISTING_PANELS_ANALYSIS_PROMPT = `You are an expert solar installation analyst specializing in evaluating existing solar panel installations.
+
+${PEI_SOLAR_CONTEXT}
+
+TASK: Analyze this image of an EXISTING solar panel installation and provide detailed improvement recommendations.
+
+CRITICAL: You must VISUALLY IDENTIFY existing solar panels on this roof and assess their current setup.
+
+ANALYSIS REQUIREMENTS:
+
+1. PANEL COUNT & SYSTEM SIZE:
+   - Count the number of visible solar panels
+   - Estimate system size (Panel Count × 400W ÷ 1000 = kW)
+   - Identify panel type/age if visible
+
+2. CURRENT PLACEMENT ASSESSMENT:
+   - Orientation: Which direction do panels face?
+   - Tilt angle: Are panels at optimal 44° for PEI?
+   - Spacing: Are panels properly spaced?
+   - Coverage: Is usable roof area being maximized?
+
+3. EFFICIENCY ANALYSIS:
+   - Panel condition: Clean, dirty, damaged?
+   - Shading issues: Trees, structures causing shadows?
+   - Current estimated efficiency: 0-100%
+
+4. IMPROVEMENT OPPORTUNITIES - BE SPECIFIC:
+   - **Repositioning**: Can panels be moved to better orientation?
+   - **Angle Adjustment**: Is tilt angle optimal?
+   - **Cleaning**: Do panels appear dirty/covered in debris?
+   - **Additional Panels**: Is there unused roof space?
+   - **Tree Trimming**: Are trees causing shading?
+   - **Maintenance**: Visible wiring issues, panel damage?
+
+5. ROOF ANALYSIS (same as plan feature):
+   - Total roof area in square meters
+   - Usable area percentage
+   - Shading level, pitch, complexity
+
+Return ONLY valid JSON (no markdown, no code blocks):
+{
+  "currentPanelCount": <number of visible panels>,
+  "estimatedSystemSizeKW": <calculated kW>,
+  "currentEfficiency": <0-100, current performance %>,
+  "potentialEfficiency": <0-100, potential after improvements>,
+  "orientation": "<direction panels face>",
+  "panelCondition": "<Good|Fair|Needs Cleaning|Minor Damage|Major Issues>",
+  "roofAreaSqMeters": <total roof area>,
+  "usableAreaPercentage": <% usable>,
+  "shadingLevel": "<low|medium|high>",
+  "roofPitchDegrees": <angle>,
+  "complexity": "<simple|moderate|complex>",
+  "estimatedAdditionalProduction": <kWh per year from improvements>,
+  "suggestions": [
+    {
+      "type": "<repositioning|cleaning|additional_panels|tree_trimming|angle_adjustment|maintenance>",
+      "title": "<short title>",
+      "description": "<detailed recommendation>",
+      "priority": "<high|medium|low>",
+      "estimatedEfficiencyGain": <percentage points>,
+      "estimatedCost": <CAD>
+    }
+  ],
+  "confidence": <0-100>
+}`;
+
+export interface AIExistingPanelsAnalysis {
+  currentPanelCount: number;
+  estimatedSystemSizeKW: number;
+  currentEfficiency: number;
+  potentialEfficiency: number;
+  orientation: string;
+  panelCondition: string;
+  roofAreaSqMeters: number;
+  usableAreaPercentage: number;
+  shadingLevel: 'low' | 'medium' | 'high';
+  roofPitchDegrees: number;
+  complexity: 'simple' | 'moderate' | 'complex';
+  estimatedAdditionalProduction: number;
+  suggestions: Array<{
+    type: string;
+    title: string;
+    description: string;
+    priority: 'high' | 'medium' | 'low';
+    estimatedEfficiencyGain: number;
+    estimatedCost?: number;
+  }>;
+  confidence: number;
+}
+
+export type AIExistingPanelsResult =
+  | { success: true; data: AIExistingPanelsAnalysis }
+  | { success: false; error: string };
+
+async function tryAnalyzeExistingPanelsWithModel(
+  genAI: GoogleGenerativeAI,
+  modelName: string,
+  base64Image: string,
+  mimeType: string
+): Promise<AIExistingPanelsResult> {
+  const model = genAI.getGenerativeModel({ model: modelName });
+
+  const imagePart = {
+    inlineData: {
+      data: base64Image,
+      mimeType: mimeType,
+    },
+  };
+
+  const result = await Promise.race([
+    model.generateContent([EXISTING_PANELS_ANALYSIS_PROMPT, imagePart]),
+    createTimeoutPromise(REQUEST_TIMEOUT_MS),
+  ]);
+
+  const response = result.response;
+  const text = response.text();
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    console.error('AI response not valid JSON:', text);
+    return {
+      success: false,
+      error: 'AI response was not valid JSON',
+    };
+  }
+
+  const parsed: AIExistingPanelsAnalysis = JSON.parse(jsonMatch[0]);
+
+  // Validate and sanitize
+  const sanitized: AIExistingPanelsAnalysis = {
+    currentPanelCount: Math.max(0, Math.min(100, parsed.currentPanelCount || 12)),
+    estimatedSystemSizeKW: Math.max(0, Math.min(50, parsed.estimatedSystemSizeKW || 4.8)),
+    currentEfficiency: Math.max(0, Math.min(100, parsed.currentEfficiency || 70)),
+    potentialEfficiency: Math.max(0, Math.min(100, parsed.potentialEfficiency || 85)),
+    orientation: parsed.orientation || 'South',
+    panelCondition: parsed.panelCondition || 'Fair',
+    roofAreaSqMeters: Math.max(50, Math.min(300, parsed.roofAreaSqMeters || 100)),
+    usableAreaPercentage: Math.max(30, Math.min(95, parsed.usableAreaPercentage || 70)),
+    shadingLevel: validateShadingLevel(parsed.shadingLevel),
+    roofPitchDegrees: Math.max(5, Math.min(60, parsed.roofPitchDegrees || 30)),
+    complexity: validateComplexity(parsed.complexity),
+    estimatedAdditionalProduction: Math.max(0, parsed.estimatedAdditionalProduction || 500),
+    suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
+    confidence: Math.max(0, Math.min(100, parsed.confidence || 50)),
+  };
+
+  return {
+    success: true,
+    data: sanitized,
+  };
+}
+
+/**
+ * Analyze existing solar panel installation with AI
+ */
+export async function analyzeExistingPanelsWithAI(
+  imageBuffer: Buffer,
+  mimeType: string = 'image/jpeg'
+): Promise<AIExistingPanelsResult> {
+  if (!genAI1) {
+    return {
+      success: false,
+      error: 'Gemini API key not configured (GOOGLE_AI_API_KEY_1)',
+    };
+  }
+
+  const base64Image = imageBuffer.toString('base64');
+  let lastError = '';
+
+  for (const modelName of VISION_MODELS) {
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        console.log(`[AI #1] Attempting existing panels analysis with ${modelName} (attempt ${attempt}/${MAX_RETRIES})`);
+
+        const result = await tryAnalyzeExistingPanelsWithModel(genAI1, modelName, base64Image, mimeType);
+
+        if (result.success) {
+          console.log(`[AI #1] Existing panels analysis success with ${modelName}`);
+          return result;
+        }
+
+        lastError = result.error;
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`[AI #1] ${modelName} attempt ${attempt} failed:`, lastError);
+
+        if (lastError.includes('404') || lastError.includes('not found')) {
+          console.log(`[AI #1] Model ${modelName} not found, trying next model...`);
+          break;
+        }
+
+        if (attempt < MAX_RETRIES) {
+          await delay(RETRY_DELAY_MS);
+        }
+      }
+    }
+  }
+
+  return {
+    success: false,
+    error: `All AI attempts failed. Last error: ${lastError}`,
+  };
+}
+
+// ============================================
 // HELPER FUNCTIONS
 // ============================================
 

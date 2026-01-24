@@ -41,3 +41,44 @@ export interface ExtendedSolarPotential extends SolarPotentialResult {
   geocodedLocation: GeocodedLocation;
   usedRealGeocoding: boolean;
 }
+
+// Improve feature API responses
+export interface ImproveResponse {
+  success: true;
+  data: {
+    currentInstallation: {
+      panelCount: number;
+      estimatedSystemSizeKW: number;
+      currentEfficiency: number;
+      orientation: string;
+      panelCondition: string;
+    };
+    improvements: {
+      potentialEfficiency: number;
+      efficiencyGain: number;
+      suggestions: Array<{
+        type: string;
+        title: string;
+        description: string;
+        priority: 'high' | 'medium' | 'low';
+        estimatedEfficiencyGain: number;
+        estimatedCost?: number;
+      }>;
+      estimatedAdditionalProductionKWh: number;
+    };
+    roofAnalysis: RoofAnalysisResult;
+    solarPotential: SolarPotentialResult;
+    uploadedImageBase64?: string;
+    aiConfidence?: number;
+  };
+}
+
+export interface ImproveErrorResponse {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+  };
+}
+
+export type ImproveAPIResponse = ImproveResponse | ImproveErrorResponse;
