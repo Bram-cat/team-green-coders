@@ -332,13 +332,15 @@ PEI-SPECIFIC BENEFITS:
 - Cold climate advantage: Winter temperatures boost panel efficiency 2-3%
 - System cost: $${(financials.estimatedSystemCost / (systemSizeKW * 1000)).toFixed(2)}/W
 
-Write a personalized, enthusiastic 3-4 sentence summary for this homeowner. Be specific and encouraging. Mention:
-1. The property's solar suitability (excellent/good/fair based on shading and pitch)
-2. Key financial metric (either payback period if <12 years, or annual savings if impressive)
-3. One PEI-specific advantage (cold efficiency, Maritime Electric rates, or Greener Homes incentive)
-4. A call-to-action or next step
+Write a persuasive, investment-focused summary for this homeowner. Treat this as a high-value financial opportunity.
+Focus on:
+1. **Wealth Creation**: Frame the $${financials.twentyFiveYearSavings.toLocaleString()} as "wealth generated" or "tax-free income".
+2. **ROI**: Compare the ${financials.returnOnInvestment.toFixed(0)}% ROI favorably against traditional investments like GICs or mutual funds.
+3. **Immediate Cash Flow**: If monthly savings cover the loan payments, highlight "day-one positive cash flow".
+4. **Energy Independence**: Mention protection against rising Maritime Electric rates (inflation hedge).
 
-Keep it under 100 words, warm and conversational, data-driven but not overly technical.`;
+Tone: Professional, enthusiastic, authoritative, financial advisor style. Avoid hesitation. Use strong verbs.
+Keep it under 120 words.Structure it as a compelling argument for going solar now.`;
 
 /**
  * Try to generate summary with a specific model

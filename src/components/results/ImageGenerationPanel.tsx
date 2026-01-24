@@ -17,32 +17,51 @@ export function ImageGenerationPanel({ imagePrompts, address }: ImageGenerationP
 
     const handleGenerateImage = async (angle: 'aerial' | 'south' | 'west') => {
         const prompt = imagePrompts.find(p => p.angle === angle);
-        if (!prompt) return;
+        if (!prompt || generatedImages[angle]) return;
 
         setGenerating(prev => ({ ...prev, [angle]: true }));
 
         try {
-            // Call your image generation API here
-            // For now, we'll show a placeholder
-            console.log('Generating image for angle:', angle);
+            console.log(`[Image Generation] Generating ${angle} view...`);
             console.log('Prompt:', prompt.prompt);
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
-            // In production, you would call the actual image generation API
-            // const response = await fetch('/api/generate-image', {
-            //   method: 'POST',
-            //   headers: { 'Content-Type': 'application/json' },
-            //   body: JSON.stringify({ prompt: prompt.prompt }),
-            // });
-            // const data = await response.json();
-            // setGeneratedImages(prev => ({ ...prev, [angle]: data.imageUrl }));
+            // Create robust SVG placeholder
+            const colors = {
+                aerial: { bg: '#3b82f6', accent: '#60a5fa', text: 'Aerial View' },
+                south: { bg: '#10b981', accent: '#34d399', text: 'South View' },
+                west: { bg: '#f59e0b', accent: '#fbbf24', text: 'West View' }
+            };
+            const theme = colors[angle];
 
-            // For now, set a placeholder
+            const svgContent = `
+                <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="grad-${angle}" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:${theme.bg};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${theme.accent};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <rect width="800" height="600" fill="url(#grad-${angle})"/>
+                    <text x="400" y="280" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle" filter="drop-shadow(0px 2px 2px rgba(0,0,0,0.3))">
+                        ${theme.text.toUpperCase()}
+                    </text>
+                    <text x="400" y="340" font-family="Arial, sans-serif" font-size="24" fill="white" text-anchor="middle" opacity="0.9">
+                        Visualization Placeholder
+                    </text>
+                    <text x="400" y="380" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle" opacity="0.8">
+                        To enable AI imagery, integrate Google Imagen API
+                    </text>
+                </svg>
+            `;
+
+            // Use encodeURIComponent for reliable data URI
+            const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent.trim())}`;
+
             setGeneratedImages(prev => ({
                 ...prev,
-                [angle]: 'https://via.placeholder.com/800x600?text=Solar+Panel+' + angle.toUpperCase() + '+View'
+                [angle]: dataUrl
             }));
         } catch (error) {
             console.error('Failed to generate image:', error);
@@ -69,8 +88,8 @@ export function ImageGenerationPanel({ imagePrompts, address }: ImageGenerationP
                         key={prompt.angle}
                         onClick={() => setSelectedAngle(prompt.angle)}
                         className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${selectedAngle === prompt.angle
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                             }`}
                     >
                         {prompt.angle.charAt(0).toUpperCase() + prompt.angle.slice(1)} View
