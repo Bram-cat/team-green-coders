@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir, unlink } from 'fs/promises';
-import { join } from 'path';
 import { analyzeRoofImageFromBuffer } from '@/lib/analysis/roofAnalysis';
 import { getLocationSolarPotential } from '@/lib/analysis/solarPotential';
 import { calculateRecommendation } from '@/lib/utils/scoreCalculation';
@@ -13,8 +11,6 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png'];
 
 export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAPIResponse>> {
-  let tempFilePath: string | null = null;
-
   try {
     const formData = await request.formData();
 
@@ -56,19 +52,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
       );
     }
 
-    // Convert image to buffer
+    // Convert image to buffer (no file system needed - works on serverless)
     const bytes = await image.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    // Save image temporarily (for file-based operations if needed)
-    const uploadDir = join(process.cwd(), 'tmp', 'uploads');
-    await mkdir(uploadDir, { recursive: true });
-
-    const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    const extension = image.type === 'image/png' ? 'png' : 'jpg';
-    tempFilePath = join(uploadDir, `${uniqueName}.${extension}`);
-
-    await writeFile(tempFilePath, buffer);
 
     // Convert image to base64 for client-side visualization
     const imageBase64 = buffer.toString('base64');
@@ -103,16 +89,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
     // Generate AI summary if financials are available
     let aiSummary: string | undefined;
     if (recommendation.financials) {
-      aiSummary = await generateFinancialSummary(
-        recommendation.financials,
-        roofAnalysis,
-        recommendation.systemSizeKW
-      );
-    }
-
-    // Clean up temp file
-    if (tempFilePath) {
-      await unlink(tempFilePath).catch(() => {}); // Ignore cleanup errors
+      try {
+        aiSummary = await generateFinancialSummary(
+          recommendation.financials,
+          roofAnalysis,
+          recommendation.systemSizeKW
+        );
+      } catch (summaryError) {
+        console.error('Failed to generate AI summary:', summaryError);
+        // Continue without AI summary
+      }
     }
 
     return NextResponse.json({
@@ -134,11 +120,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
 
   } catch (error) {
     console.error('Analysis error:', error);
-
-    // Attempt cleanup on error
-    if (tempFilePath) {
-      await unlink(tempFilePath).catch(() => {});
-    }
 
     return NextResponse.json(
       {

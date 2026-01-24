@@ -4,57 +4,6 @@ import {
   convertToRoofAnalysisResult,
   isGeminiAvailable,
 } from '@/lib/ai/geminiService';
-import * as fs from 'fs';
-
-/**
- * Analyzes a roof image to extract solar installation parameters.
- *
- * Uses Gemini AI Vision when available, falls back to mock data.
- *
- * @param imagePath - Path to the uploaded roof image
- * @returns Promise<RoofAnalysisResult & { aiConfidence?: number; usedAI: boolean }>
- */
-export async function analyzeRoofImage(
-  imagePath: string
-): Promise<RoofAnalysisResult & { aiConfidence?: number; usedAI: boolean }> {
-  const { vision: aiAvailable } = isGeminiAvailable();
-
-  // Try AI analysis if available
-  if (aiAvailable) {
-    try {
-      // Read the image file
-      const imageBuffer = fs.readFileSync(imagePath);
-
-      // Determine MIME type from file extension
-      const ext = imagePath.toLowerCase().split('.').pop();
-      const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
-
-      // Call Gemini AI
-      const aiResult = await analyzeRoofWithAI(imageBuffer, mimeType);
-
-      if (aiResult.success) {
-        console.log('AI roof analysis successful, confidence:', aiResult.data.confidence);
-        const roofResult = convertToRoofAnalysisResult(aiResult.data);
-        return {
-          ...roofResult,
-          aiConfidence: aiResult.data.confidence,
-          usedAI: true,
-        };
-      } else {
-        console.warn('AI analysis failed, falling back to mock:', aiResult.error);
-      }
-    } catch (error) {
-      console.error('Error in AI roof analysis:', error);
-    }
-  }
-
-  // Fallback to mock data
-  console.log('Using mock roof analysis data');
-  return {
-    ...generateMockRoofAnalysis(),
-    usedAI: false,
-  };
-}
 
 /**
  * Analyze roof image from a buffer (for API routes)
