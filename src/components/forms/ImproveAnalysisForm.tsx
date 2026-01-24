@@ -100,8 +100,8 @@ export function ImproveAnalysisForm({ onSuccess, onError, onLoadingChange }: Imp
             placeholder="123 Main Street"
             value={address.street}
             onChange={(e) => setAddress({ ...address, street: e.target.value })}
-            error={errors.street}
           />
+          {errors.street && <p className="text-sm text-destructive">{errors.street}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -113,8 +113,8 @@ export function ImproveAnalysisForm({ onSuccess, onError, onLoadingChange }: Imp
               placeholder="Charlottetown"
               value={address.city}
               onChange={(e) => setAddress({ ...address, city: e.target.value })}
-              error={errors.city}
             />
+            {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
           </div>
 
           <div className="space-y-2">
@@ -125,8 +125,8 @@ export function ImproveAnalysisForm({ onSuccess, onError, onLoadingChange }: Imp
               placeholder="C1A 1A1"
               value={address.postalCode}
               onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
-              error={errors.postalCode}
             />
+            {errors.postalCode && <p className="text-sm text-destructive">{errors.postalCode}</p>}
           </div>
         </div>
 
@@ -137,8 +137,8 @@ export function ImproveAnalysisForm({ onSuccess, onError, onLoadingChange }: Imp
             type="text"
             value={address.country}
             onChange={(e) => setAddress({ ...address, country: e.target.value })}
-            error={errors.country}
           />
+          {errors.country && <p className="text-sm text-destructive">{errors.country}</p>}
         </div>
       </div>
 
