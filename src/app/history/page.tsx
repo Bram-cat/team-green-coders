@@ -162,7 +162,8 @@ export default function HistoryPage() {
                                                 src={item.image_data.startsWith('data:') ? item.image_data : `data:image/png;base64,${item.image_data}`}
                                                 alt="Roof detail"
                                                 fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-[2000ms] ease-out shadow-inner"
+                                                className="object-cover group-hover:scale-105 transition-transform ease-out shadow-inner"
+                                                style={{ transitionDuration: '2000ms' }}
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-6">
                                                 <div className="text-[10px] text-white/90 font-black tracking-[0.3em] uppercase drop-shadow-md">Capture #{item.id.slice(-6)}</div>
@@ -178,8 +179,8 @@ export default function HistoryPage() {
                                             <div className="flex items-center justify-between mb-6">
                                                 <div className="flex items-center gap-4">
                                                     <span className={`px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg border border-white/20 transition-all ${item.analysis_type === 'plan'
-                                                            ? 'bg-gradient-to-r from-primary to-accent text-white'
-                                                            : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                                                        ? 'bg-gradient-to-r from-primary to-accent text-white'
+                                                        : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
                                                         }`}>
                                                         {item.analysis_type === 'plan' ? 'Strategic Plan' : 'Optimization'}
                                                     </span>

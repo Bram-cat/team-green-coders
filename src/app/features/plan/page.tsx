@@ -85,7 +85,7 @@ export default function PlanPage() {
                             </div>
                             <p className="mt-10 text-2xl font-black text-gray-900 tracking-tight">Analyzing your roof...</p>
                             <p className="mt-4 text-gray-500 font-medium max-w-sm mx-auto">
-                                Our AI is processing your architecture and calculating Prince Edward Island's irradiance data.
+                                Our AI is processing your architecture and calculating Prince Edward Island&apos;s irradiance data.
                             </p>
                         </CardContent>
                     </Card>
