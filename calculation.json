@@ -1,0 +1,163 @@
+{
+  "solar_calculation_methodology": {
+    "core_concepts": {
+      "photovoltaic_potential": {
+        "definition": "The amount of electricity (kWh) produced per unit of installed solar panel capacity (kW). It is the key metric for estimating generation.",
+        "unit": "kWh/kWp",
+        "data_source": "Typically from government or meteorological agencies (e.g., Natural Resources Canada). Uses a 'Typical Meteorological Year' (TMY) model based on historical median hourly weather data.",
+        "example_values": {
+          "Regina, SK": 1957,
+          "Toronto, ON": 1626,
+          "Halifax, NS": 1459,
+          "St. John's, NL": 1240
+        }
+      },
+      "system_capacity": {
+        "definition": "The total power output of the installed solar panel system under standard test conditions.",
+        "unit": "Kilowatts (kW) or Watts (W)",
+        "typical_residential_panel": "~355 W nameplate capacity"
+      }
+    },
+    "calculation_steps": [
+      {
+        "step": 1,
+        "name": "Determine Energy Goal",
+        "description": "Calculate the annual electricity you want the system to produce.",
+        "formula": "Annual_Energy_Goal (kWh) = Annual_Consumption (kWh) × Desired_Solar_Percentage (%)",
+        "notes": "Annual consumption can be estimated from monthly bills. The WOWA page provides per capita averages by province for rough estimates."
+      },
+      {
+        "step": 2,
+        "name": "Calculate Required System Size",
+        "description": "Determine the solar panel capacity needed to meet the energy goal based on local sunlight.",
+        "formula": "System_Size (kW) = Annual_Energy_Goal (kWh) ÷ Local_Photovoltaic_Potential (kWh/kWp)",
+        "example": "To produce 10,000 kWh in Halifax (PV potential 1459 kWh/kWp): 10,000 ÷ 1459 ≈ 6.85 kW system needed."
+      },
+      {
+        "step": 3,
+        "name": "Estimate Physical System Details",
+        "description": "Translate the system capacity into physical components.",
+        "sub_calculations": {
+          "number_of_panels": "System_Size (kW) × 1000 ÷ Panel_Wattage (W)",
+          "required_area": "Number_of_Panels × Area_per_Panel (sq. ft). Standard panel area is ~17.55 sq. ft."
+        }
+      },
+      {
+        "step": 4,
+        "name": "Calculate Financials & Savings",
+        "description": "Estimate costs, savings, and payback period.",
+        "sub_calculations": {
+          "system_cost": "Based on average price-per-watt in the region, adjusted for system size and incentives.",
+          "annual_savings": "Annual_Energy_Produced (kWh) × Local_Electricity_Rate ($/kWh)",
+          "simple_payback_period": "Net_System_Cost ($) ÷ Annual_Savings ($/year)"
+        }
+      }
+    ],
+    "key_input_variables": {
+      "location_based": [
+        {
+          "variable": "Geographic Coordinates (Latitude/Longitude)",
+          "purpose": "Determines solar irradiance, optimal panel tilt, and photovoltaic potential."
+        },
+        {
+          "variable": "Local Electricity Rate",
+          "purpose": "Critical for calculating monetary savings. Rates vary significantly by province (see table below)."
+        }
+      ],
+      "property_based": [
+        {
+          "variable": "Roof Characteristics (Type, Angle, Direction)",
+          "purpose": "Affects installation feasibility, panel orientation (south is best), and potential shading losses."
+        },
+        {
+          "variable": "Shade Percentage",
+          "purpose": "Directly reduces the effective energy production of the system."
+        }
+      ],
+      "user_based": [
+        {
+          "variable": "Monthly/Electricity Bill or Annual Consumption",
+          "purpose": "The baseline for sizing a system to meet a specific financial or energy goal."
+        },
+        {
+          "variable": "Desired Percentage of Bill to Offset",
+          "purpose": "Allows users to tailor system size to budget or space constraints."
+        }
+      ]
+    }
+  },
+  "financial_and_savings_data": {
+    "electricity_rates_by_province": [
+      {
+        "province": "Prince Edward Island",
+        "price_cents_per_kWh": 17.4,
+        "per_capita_consumption_MWh": 14.2
+      },
+      {
+        "province": "Nova Scotia",
+        "price_cents_per_kWh": 17.1,
+        "per_capita_consumption_MWh": 11.1
+      },
+      {
+        "province": "Quebec",
+        "price_cents_per_kWh": 7.3,
+        "per_capita_consumption_MWh": 21.0
+      },
+      {
+        "province": "Ontario",
+        "price_cents_per_kWh": 13.0,
+        "per_capita_consumption_MWh": 9.5
+      },
+      {
+        "province": "Alberta",
+        "price_cents_per_kWh": 16.6,
+        "per_capita_consumption_MWh": 18.7
+      }
+    ],
+    "cost_and_savings_example": {
+      "source": "SolarAssist.ca Calculator Example (Halifax, NS)",
+      "inputs": {
+        "monthly_bill": 120,
+        "system_size": 8,
+        "shade_percent": 50
+      },
+      "results": {
+        "bill_offset_percentage": 97.16,
+        "estimated_upfront_cost_buy": 22233,
+        "applicable_rebate": 2400,
+        "estimated_payback_period_years": "13-15",
+        "estimated_25_year_net_savings_buy": 17234,
+        "required_roof_area_sq_ft": 532.8
+      }
+    },
+    "incentive_programs": [
+      {
+        "program_name": "Canada Greener Homes Initiative",
+        "details": "Offers grants up to $5,000 and interest-free loans up to $40,000 for eligible retrofits, including solar."
+      },
+      {
+        "program_name": "Nova Scotia SolarHomes / Halifax Solar City",
+        "details": "Example of provincial/municipal programs. SolarHomes offers rebates (~$2,400 in example), while Solar City offers financed loans (e.g., 4.75% for 10 years)."
+      }
+    ]
+  },
+  "implementation_notes_for_ai_api": {
+    "data_sources_to_integrate": {
+      "solar_irradiance": "Use a geospatial API (e.g., NASA POWER, NRCAN) to get location-specific photovoltaic potential (kWh/kWp).",
+      "electricity_rates": "Maintain a dynamic database of utility rates by region, as this is a major variable in savings.",
+      "incentive_database": "Link to or scrape official government sites for current federal (Greener Homes) and provincial rebate amounts and rules."
+    },
+    "recommended_calculations_to_perform": [
+      "1. System Sizing: From user's address (for irradiance) and bill/consumption goal.",
+      "2. Production Estimate: System Size (kW) × Local PV Potential (kWh/kWp) = Annual kWh.",
+      "3. Financial Analysis: (Annual kWh × $/kWh) = Annual Savings. (System Cost - Rebates) ÷ Annual Savings = Simple Payback.",
+      "4. Physical Layout: Estimate panel count and roof area, adjusting for shade and non-optimal orientation."
+    ],
+    "important_assumptions_to_state": [
+      "Calculations use 'Typical Meteorological Year' data, so actual weather will vary.",
+      "System pricing is an average; actual quotes vary by installer, equipment, and site complexity.",
+      "Estimates assume the system is connected to the grid with net metering.",
+      "Panel performance degrades slightly over time (typically 0.5-1% per year); long-term savings estimates should factor this in."
+    ]
+  }
+}

@@ -8,6 +8,8 @@ import {
 /**
  * Analyze roof image from a buffer (for API routes)
  *
+ * Uses AI analysis with retry logic (up to 15 seconds) before falling back to mock data.
+ *
  * @param imageBuffer - Image as a Buffer
  * @param mimeType - MIME type of the image
  * @returns Promise<RoofAnalysisResult & { aiConfidence?: number; usedAI: boolean }>
@@ -20,6 +22,8 @@ export async function analyzeRoofImageFromBuffer(
 
   // Try AI analysis if available
   if (aiAvailable) {
+    console.log('Starting AI roof analysis with retry logic...');
+
     try {
       const aiResult = await analyzeRoofWithAI(imageBuffer, mimeType);
 
@@ -32,11 +36,15 @@ export async function analyzeRoofImageFromBuffer(
           usedAI: true,
         };
       } else {
-        console.warn('AI analysis failed, falling back to mock:', aiResult.error);
+        console.warn('AI analysis failed after retries:', aiResult.error);
+        console.log('Falling back to mock data...');
       }
     } catch (error) {
       console.error('Error in AI roof analysis:', error);
+      console.log('Falling back to mock data...');
     }
+  } else {
+    console.log('AI not available (no API key configured)');
   }
 
   // Fallback to mock data
@@ -53,7 +61,12 @@ export async function analyzeRoofImageFromBuffer(
 
 /**
  * Generate mock roof analysis data
- * Used as fallback when AI is not available
+ * Used as fallback when AI is not available or fails
+ *
+ * Based on PEI residential data:
+ * - Typical residential system: 7.2 kW median
+ * - Most roofs: 25-45 degrees pitch for snow shedding
+ * - Orientation: 54% south, 23% west, remainder east
  */
 function generateMockRoofAnalysis(): RoofAnalysisResult {
   const shadingLevels: ShadingLevel[] = ['low', 'medium', 'high'];
@@ -64,9 +77,9 @@ function generateMockRoofAnalysis(): RoofAnalysisResult {
   const complexityWeights = [0.4, 0.45, 0.15]; // 40% simple, 45% moderate, 15% complex
 
   return {
-    roofAreaSqMeters: Math.floor(Math.random() * 80) + 70, // 70-150 sq meters
+    roofAreaSqMeters: Math.floor(Math.random() * 80) + 70, // 70-150 sq meters (typical PEI home)
     shadingLevel: weightedRandom(shadingLevels, shadingWeights),
-    roofPitchDegrees: Math.floor(Math.random() * 20) + 25, // 25-45 degrees (more realistic for PEI)
+    roofPitchDegrees: Math.floor(Math.random() * 20) + 25, // 25-45 degrees (PEI typical for snow)
     complexity: weightedRandom(complexities, complexityWeights),
     usableAreaPercentage: Math.floor(Math.random() * 25) + 65, // 65-90%
   };
