@@ -36,6 +36,7 @@ const REQUEST_TIMEOUT_MS = 15000; // 15 seconds
 // ============================================
 
 export interface AIRoofAnalysis {
+  isHouse: boolean;
   roofAreaSqMeters: number;
   usableAreaPercentage: number;
   shadingLevel: 'low' | 'medium' | 'high';
@@ -118,9 +119,12 @@ ${PEI_SOLAR_CONTEXT}
 
 TASK: Analyze this roof image and provide HIGHLY ACCURATE estimates based on the PEI solar data above.
 
-CRITICAL: Your analysis must be based on ACTUAL VISUAL OBSERVATION of the image, not assumptions or averages.
+CRITICAL: Your first task is to determine if this image actually contains a residential or commercial building with a visible roof suitable for solar panels.
 
 ANALYSIS REQUIREMENTS:
+0. VALIDATION:
+   - "isHouse": Set to true ONLY if the image clearly shows a building with a roof. If it's a random object, scenery without buildings, a person, or just a placeholder, set to false.
+
 1. ROOF AREA CALCULATION - MOST IMPORTANT:
    - LOOK for reference objects: doors (2m height), windows (1-1.5m width), vehicles (4-5m length)
    - Count visible features and estimate roof dimensions in meters
@@ -155,6 +159,7 @@ ANALYSIS REQUIREMENTS:
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {
+  "isHouse": <true|false>,
   "roofAreaSqMeters": <ACTUAL measured roof area 50-230>,
   "usableAreaPercentage": <ACTUAL % after deducting ALL obstacles, setbacks 40-90>,
   "shadingLevel": "<low|medium|high based on VISIBLE shadows>",
@@ -222,8 +227,17 @@ async function tryAnalyzeWithModel(
 
   const parsed: AIRoofAnalysis = JSON.parse(jsonMatch[0]);
 
+  // If AI explicitly says it's not a house, stop here
+  if (parsed.isHouse === false) {
+    return {
+      success: false,
+      error: 'This image does not appear to be a residential or commercial building with a visible roof. Professional solar analysis requires a clear view of the architectural structure.',
+    };
+  }
+
   // Validate and sanitize the response
   const sanitized: AIRoofAnalysis = {
+    isHouse: true, // We check for false above, so if we reach here it's highly likely true or it's a house
     roofAreaSqMeters: Math.max(50, Math.min(300, parsed.roofAreaSqMeters || 100)),
     usableAreaPercentage: Math.max(30, Math.min(95, parsed.usableAreaPercentage || 70)),
     shadingLevel: validateShadingLevel(parsed.shadingLevel),

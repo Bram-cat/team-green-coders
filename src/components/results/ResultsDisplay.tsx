@@ -61,31 +61,30 @@ export function ResultsDisplay({
         )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-        {/* Left Column - Span 8 units */}
-        <div className="xl:col-span-8 space-y-10">
-          {/* Suitability Score */}
-          <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-card to-background relative group">
-            <div className="absolute top-0 right-0 p-8 pt-10 opacity-5 group-hover:scale-110 transition-transform duration-700">
-              <svg className="w-40 h-40 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 7V3L4 14h7v7l9-11h-7z" /></svg>
-            </div>
-            <CardContent className="p-10 relative z-10">
-              <SuitabilityScore
-                score={recommendation.suitabilityScore}
-                explanation={displayExplanation}
-              />
-            </CardContent>
-          </Card>
+      {/* 1. SUITABILITY SCORE - HIGH IMPACT TOP SECTION */}
+      <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-white relative group">
+        <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:scale-110 transition-transform duration-[2000ms]">
+          <svg className="w-64 h-64 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 7V3L4 14h7v7l9-11h-7z" /></svg>
+        </div>
+        <CardContent className="p-12 relative z-10">
+          <SuitabilityScore
+            score={recommendation.suitabilityScore}
+            explanation={displayExplanation}
+          />
+        </CardContent>
+      </Card>
 
-          {/* Panel Visualization */}
-          <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden">
-            <div className="bg-primary/5 px-10 py-6 border-b border-border/50 flex items-center justify-between">
-              <h2 className="text-2xl font-black text-foreground tracking-tighter uppercase italic">
-                Vision Mapping
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+        {/* 2. VISION MAPPING - SPAN 7 UNITS */}
+        <div className="xl:col-span-7 space-y-10">
+          <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-white h-full">
+            <div className="bg-primary/5 px-10 py-8 border-b border-border/40 flex items-center justify-between">
+              <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase italic">
+                Vision <span className="text-primary">Mapping</span>
               </h2>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 px-4 py-2 bg-white rounded-full shadow-sm border border-border/50">
                 <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-[10px] font-black tracking-[0.2em] text-primary uppercase">Optimized Layout</span>
+                <span className="text-[10px] font-black tracking-[0.2em] text-primary uppercase">Active Schematic</span>
               </div>
             </div>
             <CardContent className="p-10">
@@ -102,16 +101,16 @@ export function ResultsDisplay({
           </Card>
         </div>
 
-        {/* Right Column - Span 4 units */}
-        <div className="xl:col-span-4 space-y-10">
-          {/* System Summary Quick Stats */}
-          <Card className="border-none shadow-2xl rounded-[2.5rem] bg-primary text-primary-foreground p-1 animate-in">
+        {/* 3. METRICS & FINANCIALS - SPAN 5 UNITS */}
+        <div className="xl:col-span-5 space-y-10 flex flex-col">
+          {/* Key Metrics / Quick Stats */}
+          <Card className="border-none shadow-2xl rounded-[3rem] bg-primary text-primary-foreground p-1 animate-in">
             <CardContent className="p-8 space-y-8">
               <div className="flex items-center gap-4 border-b border-primary-foreground/20 pb-6">
                 <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                 </div>
-                <h2 className="text-xl font-black uppercase tracking-tighter italic">System Summary</h2>
+                <h2 className="text-xl font-black uppercase tracking-tighter italic">Technical Context</h2>
               </div>
               <SummaryBullets
                 systemSizeKW={recommendation.systemSizeKW}
@@ -125,35 +124,44 @@ export function ResultsDisplay({
 
           {/* Financial Analysis */}
           {recommendation.financials && (
-            <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden animate-in" style={{ animationDelay: '0.2s' }}>
-              <div className="bg-accent/10 px-8 py-5 border-b border-border/50">
-                <h2 className="text-lg font-black text-foreground tracking-tight uppercase italic flex items-center justify-between">
-                  Financial Analysis
-                  <span className="text-[9px] font-black text-accent bg-accent/20 px-2 py-0.5 rounded-full tracking-widest">PEI RATES</span>
-                </h2>
+            <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-white flex-1 min-h-[400px]">
+              <div className="bg-accent/5 px-8 py-6 border-b border-border/40 flex items-center justify-between">
+                <h2 className="text-xl font-black text-foreground tracking-tight uppercase italic">Yield Analysis</h2>
+                <span className="text-[9px] font-black text-accent bg-accent/10 px-3 py-1 rounded-full tracking-widest border border-accent/20">PEI CORE</span>
               </div>
               <CardContent className="p-8">
                 <FinancialSummary financials={recommendation.financials} />
               </CardContent>
             </Card>
           )}
+        </div>
+      </div>
 
-          {/* Recommendations / Next Steps */}
-          <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-muted/20 animate-in" style={{ animationDelay: '0.3s' }}>
-            <CardContent className="p-8">
-              <h2 className="text-xl font-black text-foreground mb-6 uppercase tracking-tight italic">Strategic Insights</h2>
+      {/* 4. STRATEGIC INSIGHTS - FULL WIDTH IMPACT SECTION */}
+      <section className="space-y-8">
+        <div className="flex items-center gap-6">
+          <div className="h-0.5 flex-1 bg-border/50" />
+          <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase italic flex items-center gap-4">
+            <span className="text-primary italic">Strategic</span> Roadmap
+          </h2>
+          <div className="h-0.5 flex-1 bg-border/50" />
+        </div>
+
+        <div className="max-w-5xl mx-auto">
+          <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-muted/10">
+            <CardContent className="p-12">
               <SuggestionsSection suggestions={recommendation.suggestions} />
             </CardContent>
           </Card>
-
-          {/* Reset Button */}
-          <div className="pt-4">
-            <Button variant="outline" onClick={onReset} className="w-full h-16 rounded-[1.5rem] font-bold text-lg hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all group">
-              <svg className="mr-3 w-5 h-5 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-              Analyze New Property
-            </Button>
-          </div>
         </div>
+      </section>
+
+      {/* Reset Button - Full Width Centered */}
+      <div className="max-w-2xl mx-auto pt-8">
+        <Button variant="outline" onClick={onReset} className="w-full h-20 rounded-[2rem] font-black text-xl hover:bg-destructive hover:text-white hover:border-destructive transition-all group shadow-2xl bg-white/50 backdrop-blur-sm border-2">
+          <svg className="mr-4 w-6 h-6 group-hover:rotate-180 transition-transform duration-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          Initialize New Site Analysis
+        </Button>
       </div>
     </div>
   );

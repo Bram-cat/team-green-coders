@@ -194,18 +194,22 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Analysis error:', error);
+
+    const message = error.message?.includes('does not appear to be')
+      ? error.message
+      : 'An error occurred during analysis. Please try again.';
 
     return NextResponse.json(
       {
         success: false,
         error: {
           code: 'ANALYSIS_FAILED',
-          message: 'An error occurred during analysis. Please try again.',
+          message: message,
         },
       },
-      { status: 500 }
+      { status: error.message?.includes('does not appear to be') ? 400 : 500 }
     );
   }
 }

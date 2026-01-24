@@ -38,8 +38,13 @@ export async function analyzeRoofImageFromBuffer(
           aiAnalysis: aiResult.data, // Include full AI analysis for image generation
         };
       } else {
-        console.warn('AI analysis failed after retries:', aiResult.error);
-        console.log('Falling back to mock data...');
+        console.warn('AI analysis failed:', aiResult.error);
+        // If the error is high-confidence validation (like "not a house"), we should NOT fallback
+        if (aiResult.error.includes('does not appear to be') || aiResult.error.includes('professional solar analysis requires')) {
+          throw new Error(aiResult.error);
+        }
+        // For other AI failures (timeout, API error), we can fallback if demo mode is desired
+        console.log('Falling back to mock data due to AI service error...');
       }
     } catch (error) {
       console.error('Error in AI roof analysis:', error);
