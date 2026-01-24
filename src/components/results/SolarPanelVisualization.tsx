@@ -198,5 +198,4 @@ export function SolarPanelVisualization({
     </div>
   );
 }
-  );
-}
+
