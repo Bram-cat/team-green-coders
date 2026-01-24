@@ -5,7 +5,6 @@ import { FileUpload } from '@/components/ui/FileUpload';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
-import { Label } from '@/components/ui/Label';
 import { Address } from '@/types/address';
 import { AnalyzeResponse, AnalyzeAPIResponse } from '@/types/api';
 
