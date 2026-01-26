@@ -5,6 +5,7 @@ import {
   PEI_CLIMATE_FACTORS,
   PEI_COMBINED_EFFICIENCY,
   PEI_INSTALLATION_COSTS,
+  PEI_SOLAR_DATA,
 } from '@/lib/data/peiSolarData';
 import { geocodeAddress as realGeocodeAddress, isGeocodingAvailable } from '@/lib/services/geocodingService';
 import { fetchNASAPowerData, getDefaultPEISolarData } from '@/lib/services/nasaPowerService';
@@ -103,35 +104,44 @@ export async function getLocationSolarPotential(
 
 /**
  * Calculate expected annual production for a given system size
- * Uses location-specific climate factors
+ * Uses accurate Charlottetown PEI photovoltaic potential data
+ *
+ * METHOD: System Size (kW) × Photovoltaic Potential (kWh/kWp)
+ * This is the industry-standard calculation that already accounts for:
+ * - Optimal tilt angle (36° for Charlottetown)
+ * - All system losses (10% technological + 2.9% angle of incidence + 2.79% temp/irradiance)
+ * - Monthly irradiance patterns
+ * - Climate-specific factors
+ *
+ * Source: calculation_improvements.md - Professional Solar Report
+ * Based on 100 kWp system producing 117,490 kWh/year = 1174.9 kWh/kWp
  *
  * @param systemSizeKW - System size in kilowatts
- * @param peakSunHoursPerDay - Location-specific peak sun hours
+ * @param pvPotential - Photovoltaic potential (kWh/kWp), defaults to Charlottetown value
  * @returns Expected annual production in kWh
  */
 export function calculateAnnualProduction(
   systemSizeKW: number,
-  peakSunHoursPerDay: number = 3.7
+  pvPotential: number = PEI_SOLAR_DATA.photovoltaicPotential
 ): number {
-  // Base calculation: System Size (kW) × Peak Sun Hours × 365 days
-  const baseProduction = systemSizeKW * peakSunHoursPerDay * 365;
+  // ACCURATE CALCULATION: System Size (kW) × PV Potential (kWh/kWp)
+  // This replaces the old method: systemSizeKW × peakSunHours × 365 × efficiency
+  const annualProduction = systemSizeKW * pvPotential;
 
-  // Apply PEI climate efficiency factors
-  const effectiveProduction = baseProduction * PEI_COMBINED_EFFICIENCY;
-
-  return Math.round(effectiveProduction);
+  return Math.round(annualProduction);
 }
 
 /**
  * Get production estimate with detailed breakdown
+ * NOTE: This uses the accurate PV potential method
  *
  * @param systemSizeKW - System size in kilowatts
- * @param peakSunHoursPerDay - Location-specific peak sun hours
+ * @param pvPotential - Photovoltaic potential (kWh/kWp)
  * @returns Production estimate with breakdown factors
  */
 export function getDetailedProductionEstimate(
   systemSizeKW: number,
-  peakSunHoursPerDay: number = 3.7
+  pvPotential: number = PEI_SOLAR_DATA.photovoltaicPotential
 ): {
   grossProduction: number;
   snowLoss: number;
@@ -141,20 +151,19 @@ export function getDetailedProductionEstimate(
   systemLoss: number;
   netProduction: number;
 } {
-  const grossProduction = systemSizeKW * peakSunHoursPerDay * 365;
+  // Accurate net production using PV potential
+  const netProduction = calculateAnnualProduction(systemSizeKW, pvPotential);
+
+  // For detailed breakdown, we reverse-calculate gross production
+  // PV potential already includes ~15% total losses, so gross is net / 0.85
+  const TOTAL_LOSS_FACTOR = 0.8495; // From calculation_improvements.md: 85.05% efficiency
+  const grossProduction = netProduction / TOTAL_LOSS_FACTOR;
 
   const snowLoss = grossProduction * PEI_CLIMATE_FACTORS.snowLossFactor;
   const temperatureBonus = grossProduction * (PEI_CLIMATE_FACTORS.temperatureCoefficient - 1);
   const soilingLoss = grossProduction * PEI_CLIMATE_FACTORS.soilingFactor;
   const inverterLoss = grossProduction * (1 - PEI_CLIMATE_FACTORS.inverterEfficiency);
   const systemLoss = grossProduction * PEI_CLIMATE_FACTORS.systemLosses;
-
-  const netProduction = grossProduction
-    - snowLoss
-    + temperatureBonus
-    - soilingLoss
-    - inverterLoss
-    - systemLoss;
 
   return {
     grossProduction: Math.round(grossProduction),

@@ -78,45 +78,65 @@ export type AIAnalysisResult = AIAnalysisSuccess | AIAnalysisError;
 const PEI_SOLAR_CONTEXT = `
 CRITICAL PEI SOLAR DATA FOR ACCURATE CALCULATIONS:
 
-LOCATION & CLIMATE:
-- Prince Edward Island, Canada (latitude 46.25°N, longitude -63.13°W)
+LOCATION & CLIMATE (CHARLOTTETOWN PEI):
+- Coordinates: 46.240278°N, -63.134722°W | Elevation: 3 m
 - Net Zero Target: 2040
-- Photovoltaic Potential: ~1459 kWh/kWp (similar to Halifax, NS)
-- Peak sun hours per day: 4.0 hours average
-- Optimal panel tilt: 44° (= latitude for maximum annual production)
+- Photovoltaic Potential: **1174.9 kWh/kWp** (measured for Charlottetown at optimal 36° tilt)
+  * Source: Professional solar report (calculation_improvements.md)
+  * Based on 100 kWp system producing 117,490 kWh/year
+- Average yearly irradiance: 1383.09 kWh/m² (at optimal angle)
+- Peak sun hours per day: 3.78 hours average (4.0 in summer, 1.83 in winter)
+- **Optimal panel tilt: 36°** (NOT 44°) - Professionally calculated for Charlottetown
 - Panel orientation statistics: 54% south-facing, 23% west, remainder east
+
+MONTHLY SOLAR IRRADIANCE (kWh/m²/day at optimal 36°):
+- Winter: Jan 1.83 | Feb 2.56 | Dec 1.22
+- Spring: Mar 3.74 | Apr 4.81 | May 5.25
+- Summer: Jun 5.19 | Jul 5.54 | Aug 5.39
+- Fall: Sep 4.63 | Oct 3.22 | Nov 2.02
 
 ELECTRICITY & RATES:
 - Utility: Maritime Electric (regulated by IRAC)
 - Residential electricity rate: $0.174/kWh CAD (17.4 cents)
 - Per capita consumption: 14.2 MWh/year
-- Net metering limit: 100 kW capacity
+- Net metering limit: 100 kW capacity (full retail credit)
 
 SYSTEM SPECIFICATIONS:
 - Typical residential system: 7.2 kW median (range 4-11 kW)
-- Module efficiency: 21% standard
+- Module efficiency: 21% standard (18% budget, 23% premium)
 - Typical panel: 400W nameplate, ~1.7 m² area (~17.55 sq ft)
+- Solar panel technology: c-Si (crystalline silicon)
+- Installation type: Fixed (not tracking)
 - Inverter loading ratio: 1.25
 - Performance degradation: 0.5-1% per year
+
+SYSTEM LOSSES (Already included in PV potential):
+- Technological losses: 10%
+- Angle of incidence loss: 2.9%
+- Temperature and irradiance loss: 2.79%
+- **Total system losses: ~15.05%** (efficiency factor: 84.95%)
 
 FINANCIAL DATA:
 - Installation cost: $3.50/W cash, $4.70/W financed
 - Canada Greener Homes: Up to $5,000 grant + $40,000 interest-free loan
 - Payback period typical: 10-15 years
-- 25-year ROI: Significant positive returns
+- 25-year ROI: Significant positive returns (122-182% typical)
 
 CLIMATE FACTORS:
 - Cold winter temperatures IMPROVE efficiency by 2-3%
-- Snow accumulation reduces production temporarily
+- Snow accumulation reduces production (1-8% loss depending on roof pitch)
+- Steep roofs (45°+): 1% snow loss | Moderate (25-35°): 4% | Flat (<15°): 8%
 - Peak demand: Cold winter evenings
 - Fire code setback: 3 ft (0.9 m) from roof edges required
 
-CALCULATION FORMULAS:
-- Annual Production (kWh) = System Size (kW) × PV Potential (1459 kWh/kWp) × Shading Factor × Tilt Factor
-- Panel Count = System Size (kW) × 1000 / Panel Wattage (400W)
+CRITICAL CALCULATION FORMULAS:
+- **Annual Production (kWh) = System Size (kW) × 1174.9 kWh/kWp** [Charlottetown PV Potential]
+- Adjust for tilt: If not at 36°, apply tilt factor (0.85-1.05)
+- Adjust for orientation: South=100%, East/West=85%, North=55%
+- Panel Count = System Size (kW) × 1000 / Panel Wattage (400W typical)
 - Required Roof Area = Panel Count × 1.7 m² × 1.2 (spacing factor)
 - Annual Savings = Production (kWh) × $0.174/kWh
-- Payback = Net Cost / Annual Savings
+- Simple Payback = Net Cost / Annual Savings
 `;
 
 // ============================================
@@ -166,9 +186,9 @@ ANALYSIS REQUIREMENTS (Only if isHouse is true):
 
 4. TILT ANGLE OPTIMIZATION:
    - Report the actual roof pitch in degrees (0-60°).
-   - PEI optimal tilt: 44° for maximum annual production.
+   - **Charlottetown PEI optimal tilt: 36°** for maximum annual production (NOT 44°).
    - Calculate effective tilt angle based on roof orientation.
-   - Calculate tilt factor: 1.05 (perfect south-facing at 40-48°), 1.0 (good), 0.95 (fair), 0.90 (poor).
+   - Calculate tilt factor: 1.05 (perfect south-facing at 31-41°), 1.0 (good), 0.95 (fair), 0.90 (poor).
 
 5. SNOW LOSS FACTOR (Roof Pitch Dependent):
    - Steep roofs (45°+): 0.01 (1% snow loss - fast shedding)

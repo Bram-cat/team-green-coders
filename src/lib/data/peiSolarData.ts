@@ -22,59 +22,100 @@ export const PEI_COORDINATES = {
 };
 
 // ============================================
-// SOLAR IRRADIANCE DATA
+// SOLAR IRRADIANCE DATA (ACCURATE CHARLOTTETOWN DATA)
 // ============================================
 
-// Monthly Global Horizontal Irradiance (kWh/m²/day)
-// Based on Natural Resources Canada data for Charlottetown, PEI
+// Source: calculation_improvements.md - Professional Solar Report for Charlottetown PEI
+// Based on 100 kWp system analysis at optimal 36° tilt angle
+
+// Monthly Solar Irradiance at Optimal Angle (36°) - kWh/m²/month
+export const PEI_MONTHLY_IRRADIANCE_OPTIMAL = {
+  january: 56.88,
+  february: 71.79,
+  march: 115.99,
+  april: 144.17,
+  may: 162.63,
+  june: 155.57,
+  july: 171.59,
+  august: 167.23,
+  september: 138.8,
+  october: 99.88,
+  november: 60.62,
+  december: 37.95,
+} as const;
+
+// Monthly Solar Irradiance (Daily Average) - kWh/m²/day
 export const PEI_MONTHLY_IRRADIANCE = {
-  january: 1.8,
-  february: 2.7,
-  march: 3.6,
-  april: 4.5,
-  may: 5.3,
-  june: 5.8,
-  july: 5.7,
-  august: 5.0,
-  september: 3.9,
-  october: 2.7,
-  november: 1.7,
-  december: 1.4,
-};
+  january: 1.83,
+  february: 2.56,
+  march: 3.74,
+  april: 4.81,
+  may: 5.25,
+  june: 5.19,
+  july: 5.54,
+  august: 5.39,
+  september: 4.63,
+  october: 3.22,
+  november: 2.02,
+  december: 1.22,
+} as const;
 
-// Annual solar averages
+// Monthly Power Output for 100 kWp System - kWh/month (at optimal 36° tilt)
+export const PEI_MONTHLY_POWER_OUTPUT_100KWP = {
+  january: 5250.07,
+  february: 6614.10,
+  march: 10472.50,
+  april: 12560.70,
+  may: 13723.70,
+  june: 12782.90,
+  july: 13841.10,
+  august: 13544.80,
+  september: 11532.40,
+  october: 8542.71,
+  november: 5288.42,
+  december: 3336.52,
+} as const;
+
+// Annual solar averages for Charlottetown PEI
 export const PEI_SOLAR_DATA = {
-  // Global Horizontal Irradiance (kWh/m²/year)
-  annualGHI: 1150,
+  // Average yearly irradiance at optimal angle (kWh/m²/year)
+  annualIrradianceOptimal: 1383.09,
 
-  // Average peak sun hours per day (equivalent full sun hours)
-  averagePeakSunHours: 3.7,
+  // Photovoltaic Potential (kWh per kWp installed) - CRITICAL FOR ACCURATE CALCULATIONS
+  // This is the actual measured production for Charlottetown at optimal 36° tilt
+  // Calculated as: 117,490 kWh / 100 kWp = 1174.9 kWh/kWp
+  photovoltaicPotential: 1174.9,
 
-  // Optimal tilt angle for fixed panels (roughly equal to latitude)
-  optimalTiltAngle: 44,
+  // Average peak sun hours per day (derived from annual production)
+  // 117,490 kWh / (100 kW × 365 days × 0.85 system efficiency) ≈ 3.78 hours
+  averagePeakSunHours: 3.78,
+
+  // CRITICAL: Optimal tilt angle for Charlottetown PEI
+  // Professional solar report shows 36° (NOT 44°)
+  optimalTiltAngle: 36,
 
   // Best orientation for Northern Hemisphere
   bestOrientation: 'south' as const,
 
   // Seasonal variation factor
-  winterToSummerRatio: 0.25, // Winter produces ~25% of summer output
+  winterToSummerRatio: 0.38, // Jan/July ratio: 5250/13841 ≈ 0.38
 };
 
-// Monthly peak sun hours for more detailed calculations
+// Monthly peak sun hours (derived from daily irradiance)
 export const PEI_MONTHLY_PEAK_SUN_HOURS = {
-  january: 2.0,
-  february: 2.8,
-  march: 3.5,
-  april: 4.2,
-  may: 4.8,
-  june: 5.2,
-  july: 5.1,
-  august: 4.6,
-  september: 3.8,
-  october: 2.9,
-  november: 2.0,
-  december: 1.7,
-};
+  january: 1.83,
+  february: 2.56,
+  march: 3.74,
+  april: 4.81,
+  may: 5.25,
+  june: 5.19,
+  july: 5.54,
+  august: 5.39,
+  september: 4.63,
+  october: 3.22,
+  november: 2.02,
+  december: 1.22,
+} as const;
 
 // ============================================
 // ELECTRICITY RATES (Maritime Electric)
@@ -264,14 +305,14 @@ export function calculateTemperatureAdjustment(monthlyTemps: Record<string, numb
 
 /**
  * Calculate dynamic tilt factor based on roof pitch and orientation
- * PEI optimal tilt: 44° for maximum annual production
+ * PEI optimal tilt: 36° for maximum annual production (based on professional solar report)
  *
  * @param roofPitchDegrees - Actual roof pitch (0-60)
  * @param orientation - Roof orientation
  * @returns Tilt factor (0.85-1.05)
  */
 export function calculateTiltFactor(roofPitchDegrees: number, orientation: string): number {
-  const OPTIMAL_TILT = 44; // PEI optimal tilt angle
+  const OPTIMAL_TILT = 36; // Charlottetown PEI optimal tilt angle (from calculation_improvements.md)
   const deviation = Math.abs(roofPitchDegrees - OPTIMAL_TILT);
 
   let tiltFactor = 1.0;
