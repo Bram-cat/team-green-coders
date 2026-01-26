@@ -5,6 +5,7 @@ import { SummaryBullets } from './SummaryBullets';
 import { SuggestionsSection } from './SuggestionsSection';
 import { FinancialSummary } from './FinancialSummary';
 import { SolarPanelVisualization } from './SolarPanelVisualization';
+import { SolarCompaniesCard } from './SolarCompaniesCard';
 import { SolarRecommendation, RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
 import { GeocodedLocation } from '@/types/address';
 
@@ -146,6 +147,14 @@ export function ResultsDisplay({
 
           <SuggestionsSection suggestions={recommendation.suggestions} />
         </div>
+      </section>
+
+      {/* 4.5. CERTIFIED INSTALLERS */}
+      <section className="max-w-4xl mx-auto">
+        <SolarCompaniesCard
+          title="Certified PEI Solar Installers"
+          description="Contact these top-rated local companies for professional installation quotes and consultations."
+        />
       </section>
 
       {/* 5. FINISH / CTA */}
