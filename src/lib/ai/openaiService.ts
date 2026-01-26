@@ -38,6 +38,8 @@ const REQUEST_TIMEOUT_MS = 15000; // 15 seconds
 
 export interface AIRoofAnalysis {
   isHouse: boolean;
+  hasExistingSolarPanels: boolean; // NEW: Detect if panels already installed
+  existingPanelCount?: number; // NEW: Count of existing panels if any
   roofAreaSqMeters: number;
   usableAreaPercentage: number;
   shadingLevel: 'low' | 'medium' | 'high';
@@ -140,6 +142,13 @@ CRITICAL VALIDATION RULES:
    - The building's roof occupies a significant portion of the frame or is the primary subject.
    - You can distinguish roof features like shingles, peaks, or flat surfaces.
 
+3. EXISTING SOLAR PANEL DETECTION (CRITICAL):
+   - LOOK CAREFULLY for existing solar panels on the roof
+   - Solar panels appear as dark blue/black rectangular grids
+   - If you see ANY solar panels already installed, set "hasExistingSolarPanels": true
+   - Count the visible panels and set "existingPanelCount"
+   - This is CRITICAL - user should use "Improve" feature instead of "Plan"
+
 ANALYSIS REQUIREMENTS (Only if isHouse is true):
 
 1. ROOF AREA CALCULATION:
@@ -183,6 +192,8 @@ ANALYSIS REQUIREMENTS (Only if isHouse is true):
 Return ONLY valid JSON (no markdown, no code blocks):
 {
   "isHouse": <true|false (MANDATORY strict check)>,
+  "hasExistingSolarPanels": <true|false (CRITICAL: check for existing panels)>,
+  "existingPanelCount": <number (0 if none, otherwise count visible panels)>,
   "roofAreaSqMeters": <number>,
   "usableAreaPercentage": <number>,
   "shadingLevel": "<low|medium|high>",
@@ -364,9 +375,23 @@ async function tryAnalyzeWithModel(
       };
     }
 
+    // Check if house already has solar panels
+    const hasExistingSolarPanels = parsed.hasExistingSolarPanels || false;
+    const existingPanelCount = parsed.existingPanelCount || 0;
+
+    // If panels already exist, redirect user to Improve feature
+    if (hasExistingSolarPanels && existingPanelCount > 0) {
+      return {
+        success: false,
+        error: `This property already has ${existingPanelCount} solar panels installed. Please use the "Improve" feature instead to analyze your existing installation and get recommendations for optimization.`,
+      };
+    }
+
     // Validate and sanitize the response with accuracy enhancements
     const sanitized: AIRoofAnalysis = {
       isHouse: true,
+      hasExistingSolarPanels,
+      existingPanelCount,
       roofAreaSqMeters: Math.max(50, Math.min(300, parsed.roofAreaSqMeters || 100)),
       usableAreaPercentage: Math.max(30, Math.min(95, parsed.usableAreaPercentage || 70)),
       shadingLevel: validateShadingLevel(parsed.shadingLevel),
@@ -592,11 +617,11 @@ export async function generateFinancialSummary(
 // EXISTING INSTALLATION ANALYSIS
 // ============================================
 
-const EXISTING_PANELS_ANALYSIS_PROMPT = `You are a strict solar installation auditor. Your first and most critical job is to validate the input image.
+const EXISTING_PANELS_ANALYSIS_PROMPT = `You are an expert solar installation auditor analyzing an EXISTING solar panel installation for optimization opportunities.
 
 ${PEI_SOLAR_CONTEXT}
 
-TASK: Analyze this image for an EXISTING solar panel installation.
+TASK: Perform a DETAILED analysis of the existing solar panel installation with MAXIMUM ACCURACY.
 
 CRITICAL VALIDATION RULES:
 1. "isHouse" MUST BE FALSE IF:
@@ -604,22 +629,99 @@ CRITICAL VALIDATION RULES:
    - The image is of a person, animal, food, or random object.
    - The image is of general scenery (forests, ocean) without a CLEAR, dominant building in the foreground.
    - The image is a diagram, chart, or text-heavy graphic.
+   - NO solar panels are visible on the roof.
 
 2. "isHouse" SHOULD ONLY BE TRUE IF:
-   - There is a CLEARly visible building with EXISTING solar panels or a roof suitable for them.
+   - There is a CLEARly visible building with EXISTING solar panels installed.
+   - Solar panels are clearly visible (dark blue/black rectangles on the roof).
    - The building's roof occupies a significant portion of the frame.
 
-ANALYSIS REQUIREMENTS (Only if isHouse is true):
-1. PANEL COUNT:
-   - CAREFULLY count EACH individual solar panel. Count slowly and methodically.
-   - Each blue/black rectangular panel = 1 panel.
+DETAILED ANALYSIS REQUIREMENTS (Only if isHouse is true):
 
-2. EFFICIENCY & IMPROVEMENT:
-   - Assess panel condition, shading, and tilt.
-   - Provide concrete improvements (Cleaning, Trimming, Repositioning).
+1. PRECISE PANEL COUNTING (CRITICAL FOR ACCURACY):
+   - Count SLOWLY and METHODICALLY, row by row
+   - Look for EACH individual rectangular solar panel module
+   - Typical panel size: ~1.7m x 1.0m (rectangular)
+   - Count panels that are partially visible in the frame
+   - If panels overlap or are hard to distinguish, estimate conservatively
+   - Double-check your count before finalizing
+   - Common residential installations: 10-30 panels
 
-3. ROOF ANALYSIS:
-   - Total area, usable %, and orientation.
+2. PANEL CONDITION ASSESSMENT (Be SPECIFIC):
+   - VISUAL CLEANLINESS: Look for dirt, dust, leaves, bird droppings, snow accumulation
+     * "Excellent" = panels look clean and clear
+     * "Good" = minor dirt/dust visible
+     * "Fair" = noticeable soiling, reduced transparency
+     * "Poor" = heavy soiling, debris coverage, or visible damage
+   - PHYSICAL CONDITION: Check for cracks, discoloration, hot spots, frame damage
+   - AGE INDICATORS: Older panels (>10 years) show yellowing or browning
+
+3. INSTALLATION QUALITY ANALYSIS:
+   - ALIGNMENT: Are panels evenly spaced and aligned in neat rows?
+   - MOUNTING: Check for sagging, loose panels, gaps in mounting
+   - WIRING: Look for exposed wiring, cable management quality
+   - PROFESSIONAL vs DIY installation indicators
+
+4. SHADING ANALYSIS (Be THOROUGH):
+   - Identify ALL shading sources: trees, chimneys, vents, neighboring buildings, dormers
+   - Estimate shading percentage: <5% (minimal), 5-15% (moderate), >15% (significant)
+   - Time-of-day shading: morning shadows (east), afternoon shadows (west)
+   - Seasonal shading: deciduous trees (summer only) vs evergreens (year-round)
+   - Impact assessment: Shading even 10% of panels can reduce output by 20-40%
+
+5. ORIENTATION & TILT OPTIMIZATION:
+   - Current panel orientation (north/south/east/west)
+   - Current tilt angle (estimate in degrees)
+   - PEI optimal: 44° tilt, south-facing
+   - Calculate deviation from optimal
+
+6. SYSTEM SIZE & EFFICIENCY:
+   - Estimate system size: Panel Count × 400W (or 350W for older installations)
+   - Current efficiency estimate: 70-95% (based on condition, shading, orientation)
+   - Potential efficiency: What it COULD achieve with optimizations
+
+7. ACTIONABLE IMPROVEMENT SUGGESTIONS (Be SPECIFIC and PRACTICAL):
+   PRIORITY RANKING:
+   - HIGH: Immediate impact, safety concerns, or quick fixes
+   - MEDIUM: Notable improvement, moderate cost
+   - LOW: Long-term optimization, higher cost
+
+   SUGGESTION CATEGORIES:
+   a) CLEANING & MAINTENANCE:
+      - Professional cleaning (5-15% efficiency gain, $150-300)
+      - DIY cleaning guidance (safety considerations)
+      - Frequency recommendations (quarterly/bi-annually)
+
+   b) SHADING REDUCTION:
+      - Tree trimming (specific trees/branches to target)
+      - Removal of nearby obstructions
+      - Expected efficiency gain: 10-30% depending on current shading
+
+   c) ANGLE/ORIENTATION ADJUSTMENTS:
+      - Tilt bracket adjustments (if applicable)
+      - Reorientation considerations (major undertaking)
+      - Expected improvement based on current vs optimal
+
+   d) SYSTEM UPGRADES:
+      - Microinverters vs string inverters (for shaded arrays)
+      - Power optimizers for individual panel optimization
+      - Monitoring system installation (track performance)
+
+   e) CAPACITY EXPANSION:
+      - Available roof space for additional panels
+      - Estimated additional panels possible
+      - Cost-benefit analysis
+
+   f) MAINTENANCE ISSUES:
+      - Inverter replacement (if >10 years old)
+      - Wiring inspection/repair
+      - Mounting hardware inspection
+
+8. ACCURATE ROOF ANALYSIS:
+   - Total roof area (use existing panels as reference scale)
+   - Usable area percentage (after obstacles)
+   - Roof pitch estimation
+   - Remaining expansion capacity
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {
