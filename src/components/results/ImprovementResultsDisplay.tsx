@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
+import { SolarCompaniesCard } from './SolarCompaniesCard';
 
 interface ImprovementResultsDisplayProps {
   currentInstallation: {
@@ -52,8 +53,62 @@ export function ImprovementResultsDisplay({
     low: '✅',
   };
 
+  // Determine confidence level
+  const isLowConfidence = aiConfidence && aiConfidence < 70;
+  const isMediumConfidence = aiConfidence && aiConfidence >= 70 && aiConfidence < 85;
+
   return (
     <div className="space-y-6">
+      {/* Low Confidence Warning */}
+      {isLowConfidence && (
+        <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-amber-600 dark:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-200 mb-2">
+                  Low Confidence Analysis ({aiConfidence}%)
+                </h3>
+                <p className="text-sm text-amber-800 dark:text-amber-300 leading-relaxed mb-3">
+                  Our AI analysis has <strong>{aiConfidence}% confidence</strong> in these estimates due to image quality, viewing angle, or panel visibility. The numbers shown may be less accurate than usual.
+                </p>
+                <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-4 text-sm text-amber-900 dark:text-amber-200">
+                  <p className="font-medium mb-2">For more accurate results, try:</p>
+                  <ul className="space-y-1 ml-4 list-disc">
+                    <li>Uploading a closer, higher-resolution photo</li>
+                    <li>Taking an aerial or rooftop photo showing panels clearly</li>
+                    <li>Providing multiple images from different angles</li>
+                    <li>Ensuring good lighting and minimal shadows</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Medium Confidence Notice */}
+      {isMediumConfidence && (
+        <Card className="border-blue-500/30 bg-blue-50/30 dark:bg-blue-950/10">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-blue-800 dark:text-blue-300">
+                AI confidence: <strong>{aiConfidence}%</strong>. These estimates are reasonably accurate, but uploading additional images may improve precision.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Current Installation Status */}
       <Card>
         <CardContent className="p-6">
@@ -232,6 +287,12 @@ export function ImprovementResultsDisplay({
           </div>
         </CardContent>
       </Card>
+
+      {/* Solar Companies */}
+      <SolarCompaniesCard
+        title="Professional Solar Installers in PEI"
+        description="Contact these certified local companies for system upgrades, maintenance, and optimization services."
+      />
 
       {/* Action Buttons */}
       <div className="flex gap-4">
