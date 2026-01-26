@@ -154,23 +154,7 @@ export function SolarPanelVisualization({
         </div>
       </div>
 
-      {/* 2. Core Metrics Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        {[
-          { label: 'Modules', value: panelCount, unit: 'UNITS', color: 'text-foreground' },
-          { label: 'Arch Capacity', value: systemSizeKW, unit: 'KW', color: 'text-primary' },
-          { label: 'Usable Plane', value: Math.round(roofAreaSqM * usableAreaPercentage / 100), unit: 'M²', color: 'text-foreground' },
-          { label: 'Vector Index', value: orientation, unit: 'AZIMUTH', color: 'text-foreground' },
-        ].map((stat, i) => (
-          <div key={i} className="text-center group/stat">
-            <div className="text-[9px] font-black uppercase tracking-[0.4em] text-muted-foreground mb-2 group-hover/stat:text-primary transition-colors">{stat.label}</div>
-            <div className={`text-4xl font-black tracking-tighter ${stat.color} leading-none mb-1`}>{stat.value}</div>
-            <div className="text-[8px] font-black text-muted-foreground/30 uppercase tracking-widest">{stat.unit}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* 3. AI Authenticity Badge */}
+      {/* 2. AI Authenticity Badge */}
       {usedAI && (
         <div className="pt-6 border-t border-border/40">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-10 py-5 bg-white rounded-[2rem] border border-border/50 shadow-xl">
@@ -180,7 +164,7 @@ export function SolarPanelVisualization({
               </div>
               <div>
                 <h5 className="text-base font-black text-foreground tracking-tight leading-none mb-1">Architectural Integrity Analysis</h5>
-                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.3em]">Core Processor: Gemini Vision Pro</p>
+                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.3em]">Core Processor: OpenAI Vision (GPT-4o)</p>
               </div>
             </div>
             <div className="flex items-center gap-6 flex-1 max-w-sm">

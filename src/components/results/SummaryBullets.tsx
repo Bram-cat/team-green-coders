@@ -13,6 +13,19 @@ export function SummaryBullets({
   roofArea,
   layoutSuggestion,
 }: SummaryBulletsProps) {
+  // Calculate ranges (±10% for estimates, reflects AI confidence uncertainty)
+  const systemSizeMin = Math.round((systemSizeKW * 0.9) * 10) / 10;
+  const systemSizeMax = Math.round((systemSizeKW * 1.1) * 10) / 10;
+
+  const panelCountMin = Math.max(5, Math.floor(panelCount * 0.9));
+  const panelCountMax = Math.ceil(panelCount * 1.1);
+
+  const productionMin = Math.round(annualProductionKWh * 0.9);
+  const productionMax = Math.round(annualProductionKWh * 1.1);
+
+  const roofAreaMin = Math.floor(roofArea * 0.9);
+  const roofAreaMax = Math.ceil(roofArea * 1.1);
+
   const items = [
     {
       icon: (
@@ -21,7 +34,7 @@ export function SummaryBullets({
         </svg>
       ),
       label: 'System Size',
-      value: `${systemSizeKW} kW`,
+      value: `${systemSizeMin}-${systemSizeMax} kW`,
       color: 'text-yellow-600 bg-yellow-50',
     },
     {
@@ -31,7 +44,7 @@ export function SummaryBullets({
         </svg>
       ),
       label: 'Panels Recommended',
-      value: `${panelCount} panels`,
+      value: `${panelCountMin}-${panelCountMax} panels`,
       color: 'text-blue-600 bg-blue-50',
     },
     {
@@ -41,7 +54,7 @@ export function SummaryBullets({
         </svg>
       ),
       label: 'Est. Annual Production',
-      value: `${annualProductionKWh.toLocaleString()} kWh`,
+      value: `${productionMin.toLocaleString()}-${productionMax.toLocaleString()} kWh`,
       color: 'text-orange-600 bg-orange-50',
     },
     {
@@ -51,7 +64,7 @@ export function SummaryBullets({
         </svg>
       ),
       label: 'Usable Roof Area',
-      value: `${roofArea} m²`,
+      value: `${roofAreaMin}-${roofAreaMax} m²`,
       color: 'text-green-600 bg-green-50',
     },
   ];
