@@ -4,33 +4,24 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs"
-import { Menu, X } from "lucide-react"
+import { Menu, X, Zap, TrendingUp, History as HistoryIcon } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu"
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/NavigationMenu"
 import { Button } from "@/components/ui/Button"
 
 export function Navbar() {
     const pathname = usePathname()
     const [isOpen, setIsOpen] = useState(false)
-
-    const navLinks = [
-        { href: "/", label: "Home" },
-        {
-            label: "Features",
-            dropdown: [
-                { href: "/features/plan", label: "Plan" },
-                { href: "/features/improve", label: "Improve" },
-            ]
-        },
-        { href: "/history", label: "History" },
-    ]
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-[100] border-b border-white/10 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40">
@@ -53,41 +44,53 @@ export function Navbar() {
 
                 {/* Desktop Nav */}
                 <div className="hidden md:flex items-center gap-1">
-                    {navLinks.map((link) => (
-                        link.dropdown ? (
-                            <DropdownMenu key={link.label}>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="font-semibold text-sm px-4 h-9 rounded-full hover:bg-primary/10 transition-colors">
-                                        {link.label}
-                                        <svg className="ml-1 w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="center" className="w-56 p-2 rounded-2xl bg-popover/80 backdrop-blur-xl border border-white/10 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200">
-                                    {link.dropdown.map((item) => (
-                                        <DropdownMenuItem key={item.href} asChild className="rounded-xl focus:bg-primary focus:text-white transition-all cursor-pointer py-2.5 px-4 mb-1 last:mb-0">
-                                            <Link href={item.href} className="flex items-center gap-3 w-full">
-                                                <span className="font-bold text-sm">{item.label}</span>
-                                                <svg className="ml-auto w-4 h-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                                            </Link>
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        ) : (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className={cn(
-                                    "px-4 py-2 text-sm font-semibold rounded-full transition-all duration-300 hover:bg-primary/10",
-                                    pathname === link.href
-                                        ? "bg-primary/10 text-primary"
-                                        : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                {link.label}
-                            </Link>
-                        )
-                    ))}
+                    <NavigationMenu>
+                        <NavigationMenuList>
+                            <NavigationMenuItem>
+                                <Link href="/" legacyBehavior passHref>
+                                    <NavigationMenuLink className={cn(
+                                        navigationMenuTriggerStyle(),
+                                        pathname === "/" && "bg-primary/10 text-primary"
+                                    )}>
+                                        Home
+                                    </NavigationMenuLink>
+                                </Link>
+                            </NavigationMenuItem>
+
+                            <NavigationMenuItem>
+                                <NavigationMenuTrigger>Features</NavigationMenuTrigger>
+                                <NavigationMenuContent>
+                                    <ul className="grid w-[600px] gap-3 p-6 md:grid-cols-2">
+                                        <ListItem
+                                            href="/features/plan"
+                                            title="Plan New Installation"
+                                            icon={<Zap className="h-5 w-5 text-primary" />}
+                                        >
+                                            Upload a photo of your roof to get AI-powered recommendations for a new solar panel installation. Get accurate panel counts, system sizing, and financial projections for Charlottetown PEI.
+                                        </ListItem>
+                                        <ListItem
+                                            href="/features/improve"
+                                            title="Improve Existing System"
+                                            icon={<TrendingUp className="h-5 w-5 text-accent" />}
+                                        >
+                                            Already have solar panels? Upload a photo to get expert optimization recommendations. Analyze panel condition, efficiency, shading issues, and discover opportunities to boost your system's performance.
+                                        </ListItem>
+                                    </ul>
+                                </NavigationMenuContent>
+                            </NavigationMenuItem>
+
+                            <NavigationMenuItem>
+                                <Link href="/history" legacyBehavior passHref>
+                                    <NavigationMenuLink className={cn(
+                                        navigationMenuTriggerStyle(),
+                                        pathname === "/history" && "bg-primary/10 text-primary"
+                                    )}>
+                                        History
+                                    </NavigationMenuLink>
+                                </Link>
+                            </NavigationMenuItem>
+                        </NavigationMenuList>
+                    </NavigationMenu>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -127,37 +130,60 @@ export function Navbar() {
             {/* Mobile Nav */}
             {isOpen && (
                 <div className="md:hidden border-t p-4 space-y-4 bg-background">
-                    {navLinks.map((link) => (
-                        link.dropdown ? (
-                            <div key={link.label} className="space-y-2">
-                                <div className="font-medium px-2">{link.label}</div>
-                                <div className="pl-4 space-y-2 border-l ml-2">
-                                    {link.dropdown.map((item) => (
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            className="block text-sm text-muted-foreground hover:text-primary"
-                                            onClick={() => setIsOpen(false)}
-                                        >
-                                            {item.label}
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
+                    <Link
+                        href="/"
+                        className={cn(
+                            "block text-sm font-medium transition-colors hover:text-primary px-2",
+                            pathname === "/" ? "text-primary" : "text-muted-foreground"
+                        )}
+                        onClick={() => setIsOpen(false)}
+                    >
+                        Home
+                    </Link>
+
+                    <div className="space-y-2">
+                        <div className="font-medium px-2 text-foreground">Features</div>
+                        <div className="pl-4 space-y-3 border-l ml-2">
                             <Link
-                                key={link.href}
-                                href={link.href}
-                                className={cn(
-                                    "block text-sm font-medium transition-colors hover:text-primary px-2",
-                                    pathname === link.href ? "text-primary" : "text-muted-foreground"
-                                )}
+                                href="/features/plan"
+                                className="block group"
                                 onClick={() => setIsOpen(false)}
                             >
-                                {link.label}
+                                <div className="flex items-start gap-2 p-2 rounded-lg hover:bg-primary/5 transition-colors">
+                                    <Zap className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                    <div>
+                                        <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">Plan New Installation</div>
+                                        <div className="text-xs text-muted-foreground mt-0.5">Get AI recommendations for new solar panels</div>
+                                    </div>
+                                </div>
                             </Link>
-                        )
-                    ))}
+                            <Link
+                                href="/features/improve"
+                                className="block group"
+                                onClick={() => setIsOpen(false)}
+                            >
+                                <div className="flex items-start gap-2 p-2 rounded-lg hover:bg-accent/5 transition-colors">
+                                    <TrendingUp className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
+                                    <div>
+                                        <div className="text-sm font-semibold text-foreground group-hover:text-accent transition-colors">Improve Existing System</div>
+                                        <div className="text-xs text-muted-foreground mt-0.5">Optimize your current solar installation</div>
+                                    </div>
+                                </div>
+                            </Link>
+                        </div>
+                    </div>
+
+                    <Link
+                        href="/history"
+                        className={cn(
+                            "block text-sm font-medium transition-colors hover:text-primary px-2",
+                            pathname === "/history" ? "text-primary" : "text-muted-foreground"
+                        )}
+                        onClick={() => setIsOpen(false)}
+                    >
+                        History
+                    </Link>
+
                     <div className="pt-4 border-t">
                         <SignedIn>
                             <div className="flex items-center justify-between px-2">
@@ -175,4 +201,42 @@ export function Navbar() {
             )}
         </nav>
     )
+}
+
+const ListItem = ({
+  className,
+  title,
+  children,
+  href,
+  icon,
+  ...props
+}: {
+  className?: string
+  title: string
+  children: React.ReactNode
+  href: string
+  icon?: React.ReactNode
+}) => {
+  return (
+    <li>
+      <NavigationMenuLink asChild>
+        <Link
+          href={href}
+          className={cn(
+            "block select-none space-y-1 rounded-xl p-4 leading-none no-underline outline-none transition-colors hover:bg-accent/10 hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+            className
+          )}
+          {...props}
+        >
+          <div className="flex items-center gap-3 mb-2">
+            {icon}
+            <div className="text-sm font-semibold leading-none">{title}</div>
+          </div>
+          <p className="line-clamp-3 text-sm leading-snug text-muted-foreground">
+            {children}
+          </p>
+        </Link>
+      </NavigationMenuLink>
+    </li>
+  )
 }
