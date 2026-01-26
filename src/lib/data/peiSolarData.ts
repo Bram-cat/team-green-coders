@@ -262,6 +262,38 @@ export function calculateTemperatureAdjustment(monthlyTemps: Record<string, numb
   return totalAdjustment / monthCount; // Return average monthly factor
 }
 
+/**
+ * Calculate dynamic tilt factor based on roof pitch and orientation
+ * PEI optimal tilt: 44° for maximum annual production
+ *
+ * @param roofPitchDegrees - Actual roof pitch (0-60)
+ * @param orientation - Roof orientation
+ * @returns Tilt factor (0.85-1.05)
+ */
+export function calculateTiltFactor(roofPitchDegrees: number, orientation: string): number {
+  const OPTIMAL_TILT = 44; // PEI optimal tilt angle
+  const deviation = Math.abs(roofPitchDegrees - OPTIMAL_TILT);
+
+  let tiltFactor = 1.0;
+
+  if (deviation <= 5) {
+    tiltFactor = 1.0; // Within 5° of optimal = no penalty
+  } else if (deviation <= 10) {
+    tiltFactor = 0.98; // 2% reduction
+  } else if (deviation <= 20) {
+    tiltFactor = 0.95; // 5% reduction
+  } else {
+    tiltFactor = 0.90; // 10% reduction for very steep/flat roofs
+  }
+
+  // Bonus for perfect south-facing at optimal tilt
+  if (orientation === 'south' && deviation <= 5) {
+    tiltFactor = 1.05; // 5% bonus for perfect conditions
+  }
+
+  return tiltFactor;
+}
+
 // ============================================
 // INCENTIVES & PROGRAMS
 // ============================================
