@@ -639,13 +639,34 @@ CRITICAL VALIDATION RULES:
 DETAILED ANALYSIS REQUIREMENTS (Only if isHouse is true):
 
 1. PRECISE PANEL COUNTING (CRITICAL FOR ACCURACY):
+   ⚠️ ACCURACY WARNING: Panel counting is the #1 source of user complaints. BE EXTREMELY CONSERVATIVE.
+
+   METHODOLOGY:
    - Count SLOWLY and METHODICALLY, row by row
    - Look for EACH individual rectangular solar panel module
-   - Typical panel size: ~1.7m x 1.0m (rectangular)
-   - Count panels that are partially visible in the frame
-   - If panels overlap or are hard to distinguish, estimate conservatively
-   - Double-check your count before finalizing
-   - Common residential installations: 10-30 panels
+   - Typical panel size: ~1.7m x 1.0m (rectangular, dark blue/black)
+   - Count ONLY fully visible panels - do NOT estimate hidden/obscured panels
+   - If image quality is poor or angle is oblique, estimate LOWER than what you see
+   - If panels overlap or are hard to distinguish, COUNT LOWER
+   - Double-check your count before finalizing - reduce by 10-20% if uncertain
+
+   REALITY CHECKS (CRITICAL):
+   - **Typical residential: 10-25 panels** (4-10 kW system)
+   - **Large residential: 25-35 panels** (10-14 kW system)
+   - **Small commercial: 35-60 panels** (14-24 kW system)
+   - If you count >30 panels on a residential roof, you are probably OVERCOUNTING
+   - If image is taken from ground level (not aerial), you likely can't see all panels - estimate conservatively
+   - SET CONFIDENCE LOW (<60%) if:
+     * Image quality is poor (blurry, low resolution, bad lighting)
+     * Viewing angle is oblique (not from directly above)
+     * Panels are partially obscured by trees/shadows/roof features
+     * Distance from roof is far (hard to distinguish individual panels)
+
+   COMMON MISTAKES TO AVOID:
+   - Counting roof shingles/tiles as panels (panels are much larger, uniform rectangles)
+   - Counting shadows or reflections as separate panels
+   - Overcounting when only seeing part of the array
+   - Assuming symmetry (just because you see 10 on left doesn't mean 10 on right)
 
 2. PANEL CONDITION ASSESSMENT (Be SPECIFIC):
    - VISUAL CLEANLINESS: Look for dirt, dust, leaves, bird droppings, snow accumulation
@@ -837,10 +858,38 @@ async function tryAnalyzeExistingPanelsWithModel(
       };
     }
 
-    // Validate and sanitize
+    // CRITICAL VALIDATION: Check for unrealistic panel counts
+    const rawPanelCount = parsed.currentPanelCount || 12;
+    const confidence = Math.max(0, Math.min(100, parsed.confidence || 50));
+
+    // Residential installations rarely exceed 35 panels (14 kW)
+    if (rawPanelCount > 35) {
+      console.warn(`[AI WARNING] Unusually high panel count detected: ${rawPanelCount}. Possible overcounting.`);
+
+      // If confidence is also high but count seems wrong, reduce confidence
+      if (confidence > 70) {
+        console.warn(`[AI WARNING] Reducing confidence from ${confidence}% to 55% due to suspicious panel count.`);
+        parsed.confidence = 55;
+      }
+    }
+
+    // If panel count > 40 and it's likely residential, cap it and warn user
+    if (rawPanelCount > 40) {
+      const roofArea = parsed.roofAreaSqMeters || 100;
+      const panelsPerSqM = rawPanelCount / roofArea;
+
+      // Theoretical max: ~0.6 panels per m² (1.7m² per panel + spacing)
+      if (panelsPerSqM > 0.6) {
+        console.warn(`[AI VALIDATION FAILED] Panel density (${panelsPerSqM.toFixed(2)} panels/m²) exceeds physical limits. Capping count.`);
+        parsed.currentPanelCount = Math.floor(roofArea * 0.5); // Conservative cap
+        parsed.confidence = Math.min(parsed.confidence || 50, 50); // Lower confidence
+      }
+    }
+
+    // Validate and sanitize with more conservative caps
     const sanitized: AIExistingPanelsAnalysis = {
-      currentPanelCount: Math.max(0, Math.min(100, parsed.currentPanelCount || 12)),
-      estimatedSystemSizeKW: Math.max(0, Math.min(50, parsed.estimatedSystemSizeKW || 4.8)),
+      currentPanelCount: Math.max(5, Math.min(50, parsed.currentPanelCount || 12)), // Cap at 50 (was 100)
+      estimatedSystemSizeKW: Math.max(2, Math.min(20, parsed.estimatedSystemSizeKW || 4.8)), // Cap at 20kW (was 50)
       currentEfficiency: Math.max(0, Math.min(100, parsed.currentEfficiency || 70)),
       potentialEfficiency: Math.max(0, Math.min(100, parsed.potentialEfficiency || 85)),
       orientation: parsed.orientation || 'South',
@@ -854,6 +903,21 @@ async function tryAnalyzeExistingPanelsWithModel(
       suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
       confidence: Math.max(0, Math.min(100, parsed.confidence || 50)),
     };
+
+    // Final sanity check: If confidence < 60%, add a warning suggestion
+    if (sanitized.confidence < 60) {
+      console.log(`[AI NOTICE] Low confidence (${sanitized.confidence}%). Adding image quality warning to suggestions.`);
+
+      // Add low confidence warning as first suggestion
+      sanitized.suggestions.unshift({
+        type: 'image_quality',
+        title: 'Consider Re-uploading Clearer Image',
+        description: `Our AI analysis has ${sanitized.confidence}% confidence in these estimates due to image quality, viewing angle, or visibility. For more accurate results, try uploading: (1) A closer, higher-resolution photo, (2) An aerial or rooftop photo showing panels clearly, (3) Multiple images from different angles.`,
+        priority: 'high',
+        estimatedEfficiencyGain: 0,
+        estimatedCost: 0,
+      });
+    }
 
     return { success: true, data: sanitized };
   } catch (error: any) {
