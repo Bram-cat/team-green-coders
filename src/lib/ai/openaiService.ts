@@ -829,6 +829,14 @@ async function tryAnalyzeExistingPanelsWithModel(
 
     const parsed = JSON.parse(content);
 
+    // Check if AI detected no solar panels
+    if (parsed.isHouse === false || parsed.currentPanelCount === 0 || !parsed.currentPanelCount) {
+      return {
+        success: false,
+        error: 'No solar panels detected in this image. The Improve feature is for analyzing existing solar installations. If you want to plan a new solar installation, please use the "Plan" feature instead.',
+      };
+    }
+
     // Validate and sanitize
     const sanitized: AIExistingPanelsAnalysis = {
       currentPanelCount: Math.max(0, Math.min(100, parsed.currentPanelCount || 12)),

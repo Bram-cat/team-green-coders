@@ -197,19 +197,61 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
   } catch (error: any) {
     console.error('Analysis error:', error);
 
-    const message = error.message?.includes('does not appear to be')
-      ? error.message
-      : 'An error occurred during analysis. Please try again.';
+    const errorMessage = error.message || 'An error occurred during analysis. Please try again.';
 
+    // Check for specific error types
+    // If error message indicates no API key, return 500
+    if (errorMessage.includes('OpenAI API is not configured')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'API_NOT_CONFIGURED',
+            message: 'Solar analysis service is temporarily unavailable. Please try again later.',
+          },
+        },
+        { status: 500 }
+      );
+    }
+
+    // If error indicates existing solar panels, redirect to Improve feature (user error - 400)
+    if (errorMessage.includes('already has') && errorMessage.includes('solar panels installed')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'HAS_EXISTING_PANELS',
+            message: errorMessage,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // If error indicates not a house or invalid image, return 400 (user error)
+    if (errorMessage.includes('not a house') || errorMessage.includes('does not appear to be') || errorMessage.includes('Please upload a clear photo')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_IMAGE',
+            message: errorMessage,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Generic error for everything else
     return NextResponse.json(
       {
         success: false,
         error: {
           code: 'ANALYSIS_FAILED',
-          message: message,
+          message: errorMessage,
         },
       },
-      { status: error.message?.includes('does not appear to be') ? 400 : 500 }
+      { status: 500 }
     );
   }
 }

@@ -149,15 +149,47 @@ export async function POST(request: NextRequest): Promise<NextResponse<ImproveAP
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Improvement analysis error:', error);
 
+    // Check for specific error types
+    const errorMessage = error.message || 'An error occurred during improvement analysis. Please try again.';
+
+    // If error message indicates no API key, return 500
+    if (errorMessage.includes('OpenAI API is not configured')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'API_NOT_CONFIGURED',
+            message: 'Solar analysis service is temporarily unavailable. Please try again later.',
+          },
+        },
+        { status: 500 }
+      );
+    }
+
+    // If error indicates not a house or no solar panels, return 400 (user error)
+    if (errorMessage.includes('not a house') || errorMessage.includes('no solar panels') || errorMessage.includes('Please use the "Plan" feature')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_IMAGE',
+            message: errorMessage,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Generic error for everything else
     return NextResponse.json(
       {
         success: false,
         error: {
           code: 'ANALYSIS_FAILED',
-          message: 'An error occurred during improvement analysis. Please try again.',
+          message: errorMessage,
         },
       },
       { status: 500 }
