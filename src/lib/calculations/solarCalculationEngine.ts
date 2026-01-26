@@ -9,7 +9,17 @@
  * - Panel specifications: 400W, 1.7 m², 21% efficiency
  */
 
-import { PEI_ELECTRICITY_RATES, PEI_INSTALLATION_COSTS } from '@/lib/data/peiSolarData';
+import {
+  PEI_ELECTRICITY_RATES,
+  PEI_INSTALLATION_COSTS,
+  PANEL_WATTAGE_BY_TYPE,
+  PANEL_EFFICIENCY_BY_TYPE,
+  ROOF_MATERIAL_COST_MULTIPLIER,
+  PEI_MONTHLY_AVG_TEMP,
+  calculateSnowLossFactor,
+  calculateCombinedEfficiency,
+  calculateTemperatureAdjustment
+} from '@/lib/data/peiSolarData';
 
 // ============================================
 // TYPES
@@ -37,18 +47,101 @@ export interface CalculationInputs {
     peakSunHoursPerDay: number;
     monthlyElectricityBill?: number;
     annualConsumptionKWh?: number;
+    // Accuracy enhancement parameters
+    roofPitchDegrees?: number;
+    orientation?: 'north' | 'south' | 'east' | 'west' | 'flat';
+    panelType?: 'standard' | 'premium' | 'high-efficiency';
+    roofMaterial?: 'asphalt' | 'metal' | 'tile' | 'other';
+    shadingLevel?: 'low' | 'medium' | 'high';
+    shadePatterns?: {
+        shadeMorning: boolean;
+        shadeAfternoon: boolean;
+        shadeSeasonal: boolean;
+    };
 }
 
 // ============================================
 // CONSTANTS - Based on PEI Data
 // ============================================
 
-const PANEL_WATTAGE = 400; // Watts per panel (standard 2024)
+const PANEL_WATTAGE = 400; // Watts per panel (standard 2024 - can be overridden)
 const PANEL_AREA = 1.7; // m² per panel (standard size)
 const PEI_PV_POTENTIAL = 1459; // kWh/kWp annual (Halifax/Maritime climate)
 const ELECTRICITY_RATE = 0.174; // $/kWh for PEI (Maritime Electric)
-const INSTALLATION_COST_PER_WATT = 3.00; // $/W (cash purchase median)
+const INSTALLATION_COST_PER_WATT = 3.00; // $/W (cash purchase median - varies by panel type)
 const FIRE_CODE_SETBACK = 0.9; // meters (3 ft from edges)
+
+// ============================================
+// ACCURACY ENHANCEMENT FUNCTIONS
+// ============================================
+
+/**
+ * Calculate dynamic tilt factor based on roof pitch and orientation
+ * PEI optimal tilt: 44° for maximum annual production
+ *
+ * @param roofPitchDegrees - Actual roof pitch (0-60)
+ * @param orientation - Roof orientation
+ * @returns Tilt factor (0.85-1.05)
+ */
+function calculateTiltFactor(roofPitchDegrees: number, orientation: string): number {
+  const OPTIMAL_TILT = 44; // PEI optimal tilt angle
+  const deviation = Math.abs(roofPitchDegrees - OPTIMAL_TILT);
+
+  let tiltFactor = 1.0;
+
+  if (deviation <= 5) {
+    tiltFactor = 1.0; // Within 5° of optimal = no penalty
+  } else if (deviation <= 10) {
+    tiltFactor = 0.98; // 2% reduction
+  } else if (deviation <= 20) {
+    tiltFactor = 0.95; // 5% reduction
+  } else {
+    tiltFactor = 0.90; // 10% reduction for very steep/flat roofs
+  }
+
+  // Bonus for perfect south-facing at optimal tilt
+  if (orientation === 'south' && deviation <= 5) {
+    tiltFactor = 1.05; // 5% bonus for perfect conditions
+  }
+
+  return tiltFactor;
+}
+
+/**
+ * Adjust AI-detected shading level based on user-reported shade patterns
+ *
+ * @param aiShadingLevel - Shading level from AI analysis
+ * @param shadePatterns - User-reported shade patterns
+ * @returns Adjusted shading level
+ */
+function adjustShadingLevel(
+  aiShadingLevel: string,
+  shadePatterns?: {
+    shadeMorning: boolean;
+    shadeAfternoon: boolean;
+    shadeSeasonal: boolean;
+  }
+): 'low' | 'medium' | 'high' {
+  if (!shadePatterns) return aiShadingLevel as 'low' | 'medium' | 'high';
+
+  let shadingScore = 0;
+
+  // Convert AI level to numeric score
+  if (aiShadingLevel === 'low') shadingScore = 1;
+  else if (aiShadingLevel === 'medium') shadingScore = 2;
+  else if (aiShadingLevel === 'high') shadingScore = 3;
+
+  // User-reported shading increases score
+  if (shadePatterns.shadeMorning) shadingScore += 0.5;
+  if (shadePatterns.shadeAfternoon) shadingScore += 0.5;
+  // Seasonal shading is less impactful (deciduous trees)
+  if (shadePatterns.shadeSeasonal) shadingScore -= 0.3;
+
+  // Convert back to categorical level
+  if (shadingScore <= 1.2) return 'low';
+  if (shadingScore <= 2.5) return 'medium';
+  return 'high';
+}
 
 // ============================================
 // MAIN CALCULATION FUNCTION
@@ -84,6 +177,10 @@ export function calculateSolarSystem(inputs: CalculationInputs): {
 function calculateSystemSpecs(inputs: CalculationInputs): SolarSystemSpecs {
     // Step 1: Calculate usable roof area (after fire code setbacks and obstacles)
     const usableAreaSqM = inputs.roofAreaSqM * (inputs.usablePercentage / 100);
+
+    // Step 2: Get panel specifications based on type (accuracy enhancement)
+    const panelType = inputs.panelType || 'premium';
+    const panelWattage = PANEL_WATTAGE_BY_TYPE[panelType] || 400;
 
     // Step 2: Calculate panel count using REALISTIC area requirements
     // Reality: Each panel needs ~5.5 m² of usable roof (not 2 m²!)
@@ -125,20 +222,28 @@ function calculateSystemSpecs(inputs: CalculationInputs): SolarSystemSpecs {
         panelCount = Math.max(22, Math.min(27, Math.floor(usableAreaSqM / EFFECTIVE_AREA_PER_PANEL)));
     }
 
-    // Step 3: Calculate system size in kW
-    const systemSizeKW = (panelCount * PANEL_WATTAGE) / 1000;
+    // Step 3: Calculate system size in kW (using dynamic panel wattage)
+    const systemSizeKW = (panelCount * panelWattage) / 1000;
 
-    // Step 4: Calculate annual production using PEI Photovoltaic Potential
-    // Formula from calculation.json:
-    // Annual Production (kWh) = System Size (kW) × PV Potential (kWh/kWp)
-    // For PEI: 1459 kWh/kWp (similar to Halifax, NS)
-    const annualProductionKWh = Math.round(systemSizeKW * PEI_PV_POTENTIAL);
+    // Step 4: Calculate annual production with accuracy enhancements
+    // Base production: System Size (kW) × PV Potential (kWh/kWp)
+    let annualProductionKWh = systemSizeKW * PEI_PV_POTENTIAL;
+
+    // Apply tilt factor adjustment (accuracy enhancement #1)
+    if (inputs.roofPitchDegrees !== undefined && inputs.orientation) {
+        const tiltFactor = calculateTiltFactor(inputs.roofPitchDegrees, inputs.orientation);
+        annualProductionKWh *= tiltFactor;
+    }
+
+    // Apply temperature adjustment (accuracy enhancement #4)
+    const tempAdjustment = calculateTemperatureAdjustment(PEI_MONTHLY_AVG_TEMP);
+    annualProductionKWh *= tempAdjustment;
 
     return {
         panelCount,
         systemSizeKW: Math.round(systemSizeKW * 10) / 10,
         roofAreaUsedSqM: Math.round(panelCount * PANEL_AREA),
-        annualProductionKWh,
+        annualProductionKWh: Math.round(annualProductionKWh),
     };
 }
 
@@ -150,8 +255,22 @@ function calculateFinancials(
     specs: SolarSystemSpecs,
     inputs: CalculationInputs
 ): FinancialResults {
-    // System cost: $3.00/W for cash purchase (PEI median)
-    const systemCost = Math.round(specs.systemSizeKW * 1000 * INSTALLATION_COST_PER_WATT);
+    // System cost: varies by panel type and roof material (accuracy enhancements)
+    const panelType = inputs.panelType || 'premium';
+    let costPerWatt = INSTALLATION_COST_PER_WATT;
+
+    // Adjust cost based on panel type
+    if (panelType === 'standard') {
+        costPerWatt = 2.75; // Standard panels are cheaper
+    } else if (panelType === 'high-efficiency') {
+        costPerWatt = 3.50; // High-efficiency panels are more expensive
+    }
+
+    // Apply roof material cost multiplier (accuracy enhancement)
+    const roofMaterial = inputs.roofMaterial || 'asphalt';
+    const materialMultiplier = ROOF_MATERIAL_COST_MULTIPLIER[roofMaterial] || 1.0;
+
+    const systemCost = Math.round(specs.systemSizeKW * 1000 * costPerWatt * materialMultiplier);
 
     // Annual savings: Production × Maritime Electric rate
     // Formula from calculation.json: Annual Savings = Production (kWh) × Rate ($/kWh)

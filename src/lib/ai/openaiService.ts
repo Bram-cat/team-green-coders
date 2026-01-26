@@ -1,30 +1,31 @@
 /**
- * Gemini AI Service for PEI Solar Panel Advisor
+ * OpenAI AI Service for PEI Solar Panel Advisor
  *
- * Uses Google's Gemini AI for:
+ * Uses OpenAI's GPT-4 Vision for:
  * - Roof image analysis with deep JSON data understanding (AI Key #1)
- * - Panel placement image generation from multiple angles (AI Key #2)
- * - Financial summary generation
+ * - Financial summary generation (AI Key #2)
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { RoofAnalysisResult, ShadingLevel } from '@/types/analysis';
 import { FinancialAnalysis } from '@/lib/calculations/financialCalculations';
+import {
+  calculateTiltFactor as calcTiltFactor,
+  calculateSnowLossFactor
+} from '@/lib/data/peiSolarData';
 
-// Initialize Gemini clients
-const genAI1 = process.env.GOOGLE_AI_API_KEY_1
-  ? new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY_1)
+// Initialize OpenAI clients
+const openai1 = process.env.OPENAI_IMAGE_API_KEY_1
+  ? new OpenAI({ apiKey: process.env.OPENAI_IMAGE_API_KEY_1 })
   : null;
 
-const genAI2 = process.env.GOOGLE_AI_API_KEY_2
-  ? new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY_2)
+const openai2 = process.env.OPENAI_IMAGE_API_KEY_2
+  ? new OpenAI({ apiKey: process.env.OPENAI_IMAGE_API_KEY_2 })
   : null;
 
-// Model names - using gemini-2.0-flash-exp as shown in the API dashboard
-// Model names - prioritizing stable and requested models
-const VISION_MODELS = ['gemini-1.5-flash', 'gemini-2.0-flash-exp', 'gemini-1.5-pro'];
-const TEXT_MODELS = ['gemini-1.5-flash', 'gemini-2.0-flash-exp'];
-const IMAGE_GEN_MODELS = ['gemini-2.5-flash-preview-image', 'imagen-3.0-generate-001'];
+// Model names
+const VISION_MODELS = ['gpt-4o', 'gpt-4o-mini'];
+const TEXT_MODELS = ['gpt-4o-mini'];
 
 // Retry configuration
 const MAX_RETRIES = 3;
@@ -47,6 +48,13 @@ export interface AIRoofAnalysis {
   confidence: number;
   estimatedPanelCount: number;
   optimalTiltAngle: number;
+  // Accuracy enhancement fields
+  effectiveTiltAngle: number;
+  tiltFactor: number;
+  snowLossFactor: number;
+  recommendedPanelEfficiency: number;
+  panelType: 'standard' | 'premium' | 'high-efficiency';
+  recommendedPanelWattage: number;
 }
 
 export interface AIAnalysisError {
@@ -62,7 +70,7 @@ export interface AIAnalysisSuccess {
 export type AIAnalysisResult = AIAnalysisSuccess | AIAnalysisError;
 
 // ============================================
-// PEI SOLAR DATA CONTEXT (from information.json & calculation.json)
+// PEI SOLAR DATA CONTEXT
 // ============================================
 
 const PEI_SOLAR_CONTEXT = `
@@ -110,14 +118,14 @@ CALCULATION FORMULAS:
 `;
 
 // ============================================
-// ROOF IMAGE ANALYSIS (Gemini Vision)
+// ROOF IMAGE ANALYSIS (OpenAI Vision)
 // ============================================
 
 const ROOF_ANALYSIS_PROMPT = `You are a strict solar installation auditor. Your first and most critical job is to validate the input image.
 
 ${PEI_SOLAR_CONTEXT}
 
-TASK: Analyze this roof image for solar potential.
+TASK: Analyze this roof image for solar potential with ENHANCED ACCURACY.
 
 CRITICAL VALIDATION RULES:
 1. "isHouse" MUST BE FALSE IF:
@@ -133,6 +141,7 @@ CRITICAL VALIDATION RULES:
    - You can distinguish roof features like shingles, peaks, or flat surfaces.
 
 ANALYSIS REQUIREMENTS (Only if isHouse is true):
+
 1. ROOF AREA CALCULATION:
    - LOOK for reference objects (doors, windows, cars) to estimate dimensions.
    - Calculate: Length (m) × Width (m) = Total Roof Area.
@@ -146,6 +155,31 @@ ANALYSIS REQUIREMENTS (Only if isHouse is true):
 3. SHADING ANALYSIS:
    - Detect tree or building shadows. LOW (<10%), MEDIUM (10-30%), HIGH (>30%).
 
+4. TILT ANGLE OPTIMIZATION:
+   - Report the actual roof pitch in degrees (0-60°).
+   - PEI optimal tilt: 44° for maximum annual production.
+   - Calculate effective tilt angle based on roof orientation.
+   - Calculate tilt factor: 1.05 (perfect south-facing at 40-48°), 1.0 (good), 0.95 (fair), 0.90 (poor).
+
+5. SNOW LOSS FACTOR (Roof Pitch Dependent):
+   - Steep roofs (45°+): 0.01 (1% snow loss - fast shedding)
+   - Moderate roofs (25-35°): 0.04 (4% snow loss)
+   - Flat roofs (<15°): 0.08 (8% snow loss - accumulation)
+
+6. PANEL TYPE RECOMMENDATION:
+   - Standard panels (18-19% efficiency): Budget option, larger roofs
+   - Premium panels (20-21% efficiency): Most common, good value
+   - High-efficiency panels (22-23% efficiency): Limited roof space or high shading
+
+   Recommend high-efficiency for:
+   - Small roof area (<80 m²) with moderate/high shading
+   - Complex roof shapes with limited usable area
+
+7. PANEL WATTAGE:
+   - Standard: 350W panels (18% efficiency)
+   - Premium: 400W panels (21% efficiency)
+   - High-efficiency: 450W panels (23% efficiency)
+
 Return ONLY valid JSON (no markdown, no code blocks):
 {
   "isHouse": <true|false (MANDATORY strict check)>,
@@ -158,17 +192,14 @@ Return ONLY valid JSON (no markdown, no code blocks):
   "obstacles": [<string array>],
   "confidence": <0-100>,
   "estimatedPanelCount": <number>,
-  "optimalTiltAngle": <number>
+  "optimalTiltAngle": <number>,
+  "effectiveTiltAngle": <number>,
+  "tiltFactor": <0.85-1.05>,
+  "snowLossFactor": <0.01-0.08>,
+  "recommendedPanelEfficiency": <0.18-0.23>,
+  "panelType": "<standard|premium|high-efficiency>",
+  "recommendedPanelWattage": <350|400|450>
 }`;
-
-/**
- * Create a promise that rejects after a timeout
- */
-function createTimeoutPromise(ms: number): Promise<never> {
-  return new Promise((_, reject) => {
-    setTimeout(() => reject(new Error(`Request timed out after ${ms}ms`)), ms);
-  });
-}
 
 /**
  * Delay helper for retries
@@ -193,62 +224,82 @@ CRITICAL: YOU MAY ONLY APPROVE (status: "VALID") IF:
 RETURN ONLY VALID JSON:
 {
   "status": "VALID" | "INVALID",
-  "reason": "Detailed reason why it matches or fails criteria. Mention 'logo' if it looks like a graphic."
+  "reason": "Detailed reason why it matches or fails criteria."
 }`;
 
 async function verifyIsHouse(
-  genAI: GoogleGenerativeAI,
+  client: OpenAI,
   base64Image: string,
   mimeType: string
 ): Promise<{ status: 'VALID' | 'INVALID'; reason: string }> {
-  // Use pro model if available for better reasoning, otherwise flash
-  const modelName = 'gemini-1.5-pro';
-  const model = genAI.getGenerativeModel({ model: modelName });
-
-  const imagePart = {
-    inlineData: {
-      data: base64Image,
-      mimeType: mimeType,
-    },
-  };
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
 
   try {
-    const result = await Promise.race([
-      model.generateContent([HOUSE_VERIFICATION_PROMPT, imagePart]),
-      createTimeoutPromise(12000),
-    ]);
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an Architectural Sentry AI specializing in image validation for solar panel analysis.'
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: HOUSE_VERIFICATION_PROMPT },
+            {
+              type: 'image_url',
+              image_url: { url: `data:${mimeType};base64,${base64Image}` }
+            }
+          ]
+        }
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: 300
+    }, { signal: controller.signal });
 
-    const text = result.response.text().trim();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    clearTimeout(timeoutId);
 
-    if (!jsonMatch) {
-      console.warn('[AI Sentry] Failed to parse JSON, falling back to permissive check');
-      return { status: 'VALID', reason: 'Format error' };
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('Empty response from OpenAI');
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(content);
     console.log(`[AI Sentry] Result: ${parsed.status} - ${parsed.reason}`);
 
     return {
       status: parsed.status === 'VALID' ? 'VALID' : 'INVALID',
       reason: parsed.reason || 'Architectural integrity check failed.'
     };
-  } catch (error) {
+  } catch (error: any) {
+    clearTimeout(timeoutId);
     console.error('[AI Sentry] Error:', error);
-    // On hard service error, we might fallback to Flash and try once more
+
+    // Fallback to gpt-4o-mini on error
     try {
-      const flashModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const flashResult = await flashModel.generateContent([HOUSE_VERIFICATION_PROMPT, imagePart]);
-      const flashText = flashResult.response.text().trim();
-      const flashJson = flashText.match(/\{[\s\S]*\}/);
-      if (flashJson) {
-        const parsed = JSON.parse(flashJson[0]);
-        return { status: parsed.status === 'VALID' ? 'VALID' : 'INVALID', reason: parsed.reason };
-      }
+      const fallbackResponse = await client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'user', content: [
+            { type: 'text', text: HOUSE_VERIFICATION_PROMPT },
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` }}
+          ]}
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: 300
+      });
+
+      const parsed = JSON.parse(fallbackResponse.choices[0]?.message?.content || '{}');
+      return { status: parsed.status === 'VALID' ? 'VALID' : 'INVALID', reason: parsed.reason };
     } catch (inner) {
-      console.error('[AI Sentry] Flash fallback failed');
+      console.error('[AI Sentry] Fallback failed');
     }
-    return { status: 'INVALID', reason: 'Security Sentry service interruption.' };
+
+    return {
+      status: 'INVALID',
+      reason: 'The image provided is not a house. Please upload a clear photo of a residential or commercial building with a visible roof.'
+    };
   }
 }
 
@@ -256,81 +307,95 @@ async function verifyIsHouse(
  * Try to analyze roof with a specific model
  */
 async function tryAnalyzeWithModel(
-  genAI: GoogleGenerativeAI,
+  client: OpenAI,
   modelName: string,
   base64Image: string,
   mimeType: string
 ): Promise<AIAnalysisResult> {
   // PRE-VALIDATION STEP
-  const sentryResult = await verifyIsHouse(genAI, base64Image, mimeType);
+  const sentryResult = await verifyIsHouse(client, base64Image, mimeType);
   if (sentryResult.status !== 'VALID') {
     return {
       success: false,
-      error: `Invalid Image: ${sentryResult.reason}`,
+      error: `The image provided is not a house. Please upload a clear photo of a residential or commercial building with a visible roof. (${sentryResult.reason})`,
     };
   }
 
-  const model = genAI.getGenerativeModel({ model: modelName });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  const imagePart = {
-    inlineData: {
-      data: base64Image,
-      mimeType: mimeType,
-    },
-  };
+  try {
+    const response = await client.chat.completions.create({
+      model: modelName,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a strict solar installation auditor for Prince Edward Island, Canada.'
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: ROOF_ANALYSIS_PROMPT },
+            {
+              type: 'image_url',
+              image_url: { url: `data:${mimeType};base64,${base64Image}` }
+            }
+          ]
+        }
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: 1000
+    }, { signal: controller.signal });
 
-  // Race between the API call and timeout
-  const result = await Promise.race([
-    model.generateContent([ROOF_ANALYSIS_PROMPT, imagePart]),
-    createTimeoutPromise(REQUEST_TIMEOUT_MS),
-  ]);
+    clearTimeout(timeoutId);
 
-  const response = result.response;
-  const text = response.text();
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      return { success: false, error: 'Empty response from OpenAI' };
+    }
 
-  // Parse the JSON response
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    console.error('AI response not valid JSON:', text);
-    return {
-      success: false,
-      error: 'AI response was not valid JSON',
+    const parsed: AIRoofAnalysis = JSON.parse(content);
+
+    // Confidence check
+    if (parsed.confidence < 30) {
+      return {
+        success: false,
+        error: 'Visual Clarity Error: The image quality or visibility is too low for accurate analysis. Please provide a clearer photo.',
+      };
+    }
+
+    // Validate and sanitize the response with accuracy enhancements
+    const sanitized: AIRoofAnalysis = {
+      isHouse: true,
+      roofAreaSqMeters: Math.max(50, Math.min(300, parsed.roofAreaSqMeters || 100)),
+      usableAreaPercentage: Math.max(30, Math.min(95, parsed.usableAreaPercentage || 70)),
+      shadingLevel: validateShadingLevel(parsed.shadingLevel),
+      roofPitchDegrees: Math.max(5, Math.min(60, parsed.roofPitchDegrees || 30)),
+      complexity: validateComplexity(parsed.complexity),
+      orientation: validateOrientation(parsed.orientation),
+      obstacles: Array.isArray(parsed.obstacles) ? parsed.obstacles : [],
+      confidence: Math.max(0, Math.min(100, parsed.confidence || 50)),
+      estimatedPanelCount: Math.max(5, Math.min(50, parsed.estimatedPanelCount || 18)),
+      optimalTiltAngle: Math.max(20, Math.min(60, parsed.optimalTiltAngle || 44)),
+
+      // Accuracy enhancements with fallback calculations
+      effectiveTiltAngle: parsed.effectiveTiltAngle || parsed.roofPitchDegrees || 44,
+      tiltFactor: parsed.tiltFactor || calcTiltFactor(parsed.roofPitchDegrees || 30, parsed.orientation || 'south'),
+      snowLossFactor: parsed.snowLossFactor || calculateSnowLossFactor(parsed.roofPitchDegrees || 30),
+      recommendedPanelEfficiency: parsed.recommendedPanelEfficiency || 0.21,
+      panelType: parsed.panelType || 'premium',
+      recommendedPanelWattage: parsed.recommendedPanelWattage || 400,
     };
+
+    return { success: true, data: sanitized };
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    throw error;
   }
-
-  const parsed: AIRoofAnalysis = JSON.parse(jsonMatch[0]);
-
-  // Double check confidence for house detection if confidence is provided
-  if (parsed.confidence < 30) {
-    return {
-      success: false,
-      error: 'Visual Clarity Error: The image quality or visibility is too low for our AI to accurately architect your solar future. Please provide a clearer photo.',
-    };
-  }
-
-  // Validate and sanitize the response
-  const sanitized: AIRoofAnalysis = {
-    isHouse: true,
-    roofAreaSqMeters: Math.max(50, Math.min(300, parsed.roofAreaSqMeters || 100)),
-    usableAreaPercentage: Math.max(30, Math.min(95, parsed.usableAreaPercentage || 70)),
-    shadingLevel: validateShadingLevel(parsed.shadingLevel),
-    roofPitchDegrees: Math.max(5, Math.min(60, parsed.roofPitchDegrees || 30)),
-    complexity: validateComplexity(parsed.complexity),
-    orientation: validateOrientation(parsed.orientation),
-    obstacles: Array.isArray(parsed.obstacles) ? parsed.obstacles : [],
-    confidence: Math.max(0, Math.min(100, parsed.confidence || 50)),
-    estimatedPanelCount: Math.max(5, Math.min(50, parsed.estimatedPanelCount || 18)),
-    optimalTiltAngle: Math.max(20, Math.min(60, parsed.optimalTiltAngle || 44)),
-  };
-
-  return {
-    success: true,
-    data: sanitized,
-  };
 }
 
 /**
- * Analyze a roof image using Gemini Vision AI with retry logic
+ * Analyze a roof image using OpenAI Vision AI with retry logic
  *
  * @param imageBuffer - The image file as a Buffer
  * @param mimeType - The MIME type of the image (image/jpeg or image/png)
@@ -340,10 +405,10 @@ export async function analyzeRoofWithAI(
   imageBuffer: Buffer,
   mimeType: string = 'image/jpeg'
 ): Promise<AIAnalysisResult> {
-  if (!genAI1) {
+  if (!openai1) {
     return {
       success: false,
-      error: 'Gemini API key not configured (GOOGLE_AI_API_KEY_1)',
+      error: 'OpenAI API key not configured (OPENAI_IMAGE_API_KEY_1)',
     };
   }
 
@@ -356,7 +421,7 @@ export async function analyzeRoofWithAI(
       try {
         console.log(`[AI #1] Attempting roof analysis with ${modelName} (attempt ${attempt}/${MAX_RETRIES})`);
 
-        const result = await tryAnalyzeWithModel(genAI1, modelName, base64Image, mimeType);
+        const result = await tryAnalyzeWithModel(openai1, modelName, base64Image, mimeType);
 
         if (result.success) {
           console.log(`[AI #1] Success with model ${modelName}, confidence: ${result.data.confidence}%`);
@@ -368,9 +433,9 @@ export async function analyzeRoofWithAI(
         lastError = error instanceof Error ? error.message : 'Unknown error';
         console.error(`[AI #1] ${modelName} attempt ${attempt} failed:`, lastError);
 
-        // If it's a 404, try next model immediately
-        if (lastError.includes('404') || lastError.includes('not found') || lastError.includes('NotFound')) {
-          console.log(`[AI #1] Model ${modelName} not found, trying next model...`);
+        // If rate limited, try next model immediately
+        if (lastError.includes('429') || lastError.includes('rate')) {
+          console.log(`[AI #1] Rate limited, trying next model...`);
           break;
         }
 
@@ -436,25 +501,43 @@ Focus on:
 4. **Energy Independence**: Mention protection against rising Maritime Electric rates (inflation hedge).
 
 Tone: Professional, enthusiastic, authoritative, financial advisor style. Avoid hesitation. Use strong verbs.
-Keep it under 120 words.Structure it as a compelling argument for going solar now.`;
+Keep it under 120 words. Structure it as a compelling argument for going solar now.`;
 
 /**
  * Try to generate summary with a specific model
  */
 async function tryGenerateSummaryWithModel(
-  genAI: GoogleGenerativeAI,
+  client: OpenAI,
   modelName: string,
   prompt: string
 ): Promise<string | null> {
-  const model = genAI.getGenerativeModel({ model: modelName });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  const result = await Promise.race([
-    model.generateContent(prompt),
-    createTimeoutPromise(REQUEST_TIMEOUT_MS),
-  ]);
+  try {
+    const response = await client.chat.completions.create({
+      model: modelName,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a friendly, knowledgeable solar energy advisor specializing in Prince Edward Island, Canada.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 300,
+      temperature: 0.7
+    }, { signal: controller.signal });
 
-  const response = result.response;
-  return response.text().trim();
+    clearTimeout(timeoutId);
+
+    return response.choices[0]?.message?.content?.trim() || null;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
 }
 
 /**
@@ -472,20 +555,19 @@ export async function generateFinancialSummary(
   systemSizeKW: number,
   coordinates: { lat: number; lon: number } = { lat: 46.25, lon: -63.13 }
 ): Promise<string> {
-  if (!genAI2) {
+  if (!openai2) {
     return generateTemplateSummary(financials, roofData, systemSizeKW);
   }
 
   const prompt = FINANCIAL_SUMMARY_PROMPT_TEMPLATE(roofData, financials, systemSizeKW, coordinates);
   let lastError = '';
 
-  // Try each model with retries
   for (const modelName of TEXT_MODELS) {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         console.log(`[AI #2] Attempting summary with ${modelName} (attempt ${attempt}/${MAX_RETRIES})`);
 
-        const summary = await tryGenerateSummaryWithModel(genAI2, modelName, prompt);
+        const summary = await tryGenerateSummaryWithModel(openai2, modelName, prompt);
 
         if (summary) {
           console.log(`[AI #2] Summary generated with ${modelName}`);
@@ -495,13 +577,6 @@ export async function generateFinancialSummary(
         lastError = error instanceof Error ? error.message : 'Unknown error';
         console.error(`[AI #2] ${modelName} summary attempt ${attempt} failed:`, lastError);
 
-        // If it's a 404, try next model immediately
-        if (lastError.includes('404') || lastError.includes('not found')) {
-          console.log(`[AI #2] Model ${modelName} not found, trying next model...`);
-          break;
-        }
-
-        // For other errors, wait before retrying
         if (attempt < MAX_RETRIES) {
           await delay(RETRY_DELAY_MS);
         }
@@ -603,70 +678,78 @@ export type AIExistingPanelsResult =
   | { success: false; error: string };
 
 async function tryAnalyzeExistingPanelsWithModel(
-  genAI: GoogleGenerativeAI,
+  client: OpenAI,
   modelName: string,
   base64Image: string,
   mimeType: string
 ): Promise<AIExistingPanelsResult> {
   // PRE-VALIDATION STEP
-  const sentryResult = await verifyIsHouse(genAI, base64Image, mimeType);
+  const sentryResult = await verifyIsHouse(client, base64Image, mimeType);
   if (sentryResult.status !== 'VALID') {
     return {
       success: false,
-      error: `Invalid Image: ${sentryResult.reason}`,
+      error: `The image provided is not a house. Please upload a clear photo of a residential or commercial building with a visible roof. (${sentryResult.reason})`,
     };
   }
 
-  const model = genAI.getGenerativeModel({ model: modelName });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  const imagePart = {
-    inlineData: {
-      data: base64Image,
-      mimeType: mimeType,
-    },
-  };
+  try {
+    const response = await client.chat.completions.create({
+      model: modelName,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a strict solar installation auditor for Prince Edward Island, Canada.'
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: EXISTING_PANELS_ANALYSIS_PROMPT },
+            {
+              type: 'image_url',
+              image_url: { url: `data:${mimeType};base64,${base64Image}` }
+            }
+          ]
+        }
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: 1000
+    }, { signal: controller.signal });
 
-  const result = await Promise.race([
-    model.generateContent([EXISTING_PANELS_ANALYSIS_PROMPT, imagePart]),
-    createTimeoutPromise(REQUEST_TIMEOUT_MS),
-  ]);
+    clearTimeout(timeoutId);
 
-  const response = result.response;
-  const text = response.text();
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      return { success: false, error: 'Empty response from OpenAI' };
+    }
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    console.error('AI response not valid JSON:', text);
-    return {
-      success: false,
-      error: 'AI response was not valid JSON',
+    const parsed = JSON.parse(content);
+
+    // Validate and sanitize
+    const sanitized: AIExistingPanelsAnalysis = {
+      currentPanelCount: Math.max(0, Math.min(100, parsed.currentPanelCount || 12)),
+      estimatedSystemSizeKW: Math.max(0, Math.min(50, parsed.estimatedSystemSizeKW || 4.8)),
+      currentEfficiency: Math.max(0, Math.min(100, parsed.currentEfficiency || 70)),
+      potentialEfficiency: Math.max(0, Math.min(100, parsed.potentialEfficiency || 85)),
+      orientation: parsed.orientation || 'South',
+      panelCondition: parsed.panelCondition || 'Fair',
+      roofAreaSqMeters: Math.max(50, Math.min(300, parsed.roofAreaSqMeters || 100)),
+      usableAreaPercentage: Math.max(30, Math.min(95, parsed.usableAreaPercentage || 70)),
+      shadingLevel: validateShadingLevel(parsed.shadingLevel),
+      roofPitchDegrees: Math.max(5, Math.min(60, parsed.roofPitchDegrees || 30)),
+      complexity: validateComplexity(parsed.complexity),
+      estimatedAdditionalProduction: Math.max(0, parsed.estimatedAdditionalProduction || 500),
+      suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
+      confidence: Math.max(0, Math.min(100, parsed.confidence || 50)),
     };
+
+    return { success: true, data: sanitized };
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    throw error;
   }
-
-  const parsed = JSON.parse(jsonMatch[0]);
-
-  // Validate and sanitize
-  const sanitized: AIExistingPanelsAnalysis = {
-    currentPanelCount: Math.max(0, Math.min(100, parsed.currentPanelCount || 12)),
-    estimatedSystemSizeKW: Math.max(0, Math.min(50, parsed.estimatedSystemSizeKW || 4.8)),
-    currentEfficiency: Math.max(0, Math.min(100, parsed.currentEfficiency || 70)),
-    potentialEfficiency: Math.max(0, Math.min(100, parsed.potentialEfficiency || 85)),
-    orientation: parsed.orientation || 'South',
-    panelCondition: parsed.panelCondition || 'Fair',
-    roofAreaSqMeters: Math.max(50, Math.min(300, parsed.roofAreaSqMeters || 100)),
-    usableAreaPercentage: Math.max(30, Math.min(95, parsed.usableAreaPercentage || 70)),
-    shadingLevel: validateShadingLevel(parsed.shadingLevel),
-    roofPitchDegrees: Math.max(5, Math.min(60, parsed.roofPitchDegrees || 30)),
-    complexity: validateComplexity(parsed.complexity),
-    estimatedAdditionalProduction: Math.max(0, parsed.estimatedAdditionalProduction || 500),
-    suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
-    confidence: Math.max(0, Math.min(100, parsed.confidence || 50)),
-  };
-
-  return {
-    success: true,
-    data: sanitized,
-  };
 }
 
 /**
@@ -676,10 +759,10 @@ export async function analyzeExistingPanelsWithAI(
   imageBuffer: Buffer,
   mimeType: string = 'image/jpeg'
 ): Promise<AIExistingPanelsResult> {
-  if (!genAI1) {
+  if (!openai1) {
     return {
       success: false,
-      error: 'Gemini API key not configured (GOOGLE_AI_API_KEY_1)',
+      error: 'OpenAI API key not configured (OPENAI_IMAGE_API_KEY_1)',
     };
   }
 
@@ -691,7 +774,7 @@ export async function analyzeExistingPanelsWithAI(
       try {
         console.log(`[AI #1] Attempting existing panels analysis with ${modelName} (attempt ${attempt}/${MAX_RETRIES})`);
 
-        const result = await tryAnalyzeExistingPanelsWithModel(genAI1, modelName, base64Image, mimeType);
+        const result = await tryAnalyzeExistingPanelsWithModel(openai1, modelName, base64Image, mimeType);
 
         if (result.success) {
           console.log(`[AI #1] Existing panels analysis success with ${modelName}`);
@@ -703,8 +786,8 @@ export async function analyzeExistingPanelsWithAI(
         lastError = error instanceof Error ? error.message : 'Unknown error';
         console.error(`[AI #1] ${modelName} attempt ${attempt} failed:`, lastError);
 
-        if (lastError.includes('404') || lastError.includes('not found')) {
-          console.log(`[AI #1] Model ${modelName} not found, trying next model...`);
+        if (lastError.includes('429') || lastError.includes('rate')) {
+          console.log(`[AI #1] Rate limited, trying next model...`);
           break;
         }
 
@@ -770,12 +853,11 @@ export function convertToRoofAnalysisResult(aiData: AIRoofAnalysis): RoofAnalysi
 }
 
 /**
- * Check if Gemini AI is available
+ * Check if OpenAI is available
  */
-export function isGeminiAvailable(): { vision: boolean; text: boolean; imageGen: boolean } {
+export function isOpenAIAvailable(): { vision: boolean; text: boolean } {
   return {
-    vision: !!genAI1,
-    text: !!genAI2,
-    imageGen: !!genAI2,
+    vision: !!openai1,
+    text: !!openai2,
   };
 }

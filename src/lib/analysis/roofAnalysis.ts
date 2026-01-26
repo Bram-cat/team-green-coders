@@ -2,9 +2,9 @@ import { RoofAnalysisResult, ShadingLevel } from '@/types/analysis';
 import {
   analyzeRoofWithAI,
   convertToRoofAnalysisResult,
-  isGeminiAvailable,
+  isOpenAIAvailable,
   AIRoofAnalysis,
-} from '@/lib/ai/geminiService';
+} from '@/lib/ai/openaiService';
 
 /**
  * Analyze roof image from a buffer (for API routes)
@@ -19,7 +19,7 @@ export async function analyzeRoofImageFromBuffer(
   imageBuffer: Buffer,
   mimeType: string
 ): Promise<RoofAnalysisResult & { aiConfidence?: number; usedAI: boolean; aiAnalysis?: AIRoofAnalysis }> {
-  const { vision: aiAvailable } = isGeminiAvailable();
+  const { vision: aiAvailable } = isOpenAIAvailable();
 
   // Try AI analysis if available
   if (aiAvailable) {

@@ -1,5 +1,5 @@
 import { ShadingLevel } from '@/types/analysis';
-import { analyzeExistingPanelsWithAI, isGeminiAvailable } from '@/lib/ai/geminiService';
+import { analyzeExistingPanelsWithAI, isOpenAIAvailable } from '@/lib/ai/openaiService';
 
 export interface ImprovementSuggestion {
   type: string;
@@ -44,7 +44,7 @@ export async function analyzeExistingInstallation(
   imageBuffer: Buffer,
   mimeType: string
 ): Promise<ExistingInstallationAnalysis> {
-  const { vision: aiAvailable } = isGeminiAvailable();
+  const { vision: aiAvailable } = isOpenAIAvailable();
 
   // Try AI analysis if available
   if (aiAvailable) {

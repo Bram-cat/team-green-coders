@@ -122,13 +122,53 @@ export const PEI_INSTALLATION_COSTS = {
   panelAreaSqM: 1.7, // Square meters per panel
 };
 
+// Panel type specifications for accuracy enhancements
+export const PANEL_WATTAGE_BY_TYPE = {
+  'standard': 350,        // 18% efficiency - Budget option
+  'premium': 400,         // 21% efficiency - Most common
+  'high-efficiency': 450  // 23% efficiency - Limited space roofs
+} as const;
+
+export const PANEL_EFFICIENCY_BY_TYPE = {
+  'standard': 0.18,
+  'premium': 0.21,
+  'high-efficiency': 0.23
+} as const;
+
+// Roof material cost adjustments
+export const ROOF_MATERIAL_COST_MULTIPLIER = {
+  'asphalt': 1.0,      // Baseline (asphalt shingles)
+  'metal': 0.95,       // Easier installation (5% discount)
+  'tile': 1.15,        // Harder installation (15% premium)
+  'other': 1.05
+} as const;
+
 // ============================================
 // CLIMATE ADJUSTMENT FACTORS
 // ============================================
 
+// Monthly average temperatures for PEI (°C)
+export const PEI_MONTHLY_AVG_TEMP = {
+  january: -8,
+  february: -7,
+  march: -2,
+  april: 4,
+  may: 11,
+  june: 16,
+  july: 19,
+  august: 19,
+  september: 14,
+  october: 8,
+  november: 3,
+  december: -4
+} as const;
+
+// Panel temperature coefficient (% efficiency loss per °C above 25°C)
+export const PANEL_TEMPERATURE_COEFFICIENT = -0.004; // -0.4% per °C
+
 export const PEI_CLIMATE_FACTORS = {
-  // Snow coverage loss (annual average)
-  snowLossFactor: 0.04, // 4% production loss
+  // Snow coverage loss (annual average - now dynamic based on roof pitch)
+  snowLossFactor: 0.04, // 4% production loss (baseline for 25-35° pitch)
 
   // Cold weather efficiency bonus (panels work better in cold)
   temperatureCoefficient: 1.02, // 2% efficiency gain
@@ -146,7 +186,7 @@ export const PEI_CLIMATE_FACTORS = {
   systemLosses: 0.02, // 2%
 };
 
-// Combined efficiency factor for quick calculations
+// Combined efficiency factor for quick calculations (baseline)
 export const PEI_COMBINED_EFFICIENCY =
   (1 - PEI_CLIMATE_FACTORS.snowLossFactor) *
   PEI_CLIMATE_FACTORS.temperatureCoefficient *
@@ -154,6 +194,73 @@ export const PEI_COMBINED_EFFICIENCY =
   PEI_CLIMATE_FACTORS.inverterEfficiency *
   (1 - PEI_CLIMATE_FACTORS.systemLosses);
 // Result: ~0.90 or 90% effective production
+
+// ============================================
+// ACCURACY ENHANCEMENT FUNCTIONS
+// ============================================
+
+/**
+ * Calculate dynamic snow loss factor based on roof pitch
+ * Steeper roofs shed snow faster, reducing production losses
+ *
+ * @param roofPitchDegrees - Roof pitch in degrees (0-60)
+ * @returns Snow loss factor (0.01-0.08)
+ */
+export function calculateSnowLossFactor(roofPitchDegrees: number): number {
+  if (roofPitchDegrees >= 45) {
+    return 0.01; // Very steep: 1% loss (snow slides off quickly)
+  } else if (roofPitchDegrees >= 35) {
+    return 0.02; // Steep: 2% loss
+  } else if (roofPitchDegrees >= 25) {
+    return 0.04; // Moderate: 4% loss (baseline)
+  } else if (roofPitchDegrees >= 15) {
+    return 0.06; // Shallow: 6% loss
+  } else {
+    return 0.08; // Flat: 8% loss (snow accumulates)
+  }
+}
+
+/**
+ * Calculate combined efficiency with dynamic snow loss based on roof pitch
+ *
+ * @param roofPitchDegrees - Roof pitch in degrees (0-60)
+ * @returns Combined efficiency factor (0-1)
+ */
+export function calculateCombinedEfficiency(roofPitchDegrees: number): number {
+  const snowLoss = calculateSnowLossFactor(roofPitchDegrees);
+
+  return (
+    (1 - snowLoss) *
+    PEI_CLIMATE_FACTORS.temperatureCoefficient *
+    (1 - PEI_CLIMATE_FACTORS.soilingFactor) *
+    PEI_CLIMATE_FACTORS.inverterEfficiency *
+    (1 - PEI_CLIMATE_FACTORS.systemLosses)
+  );
+}
+
+/**
+ * Calculate temperature adjustment factor for panel efficiency
+ * Accounts for PEI's cold climate which improves panel performance
+ *
+ * @param monthlyTemps - Record of monthly average temperatures
+ * @returns Temperature adjustment factor (0-1.2)
+ */
+export function calculateTemperatureAdjustment(monthlyTemps: Record<string, number>): number {
+  const PANEL_STC_TEMP = 25; // Standard Test Condition temperature (°C)
+
+  let totalAdjustment = 0;
+  const monthCount = Object.keys(monthlyTemps).length;
+
+  for (const [month, ambientTemp] of Object.entries(monthlyTemps)) {
+    // Panels typically run 20-30°C warmer than ambient (use 25°C average)
+    const panelTemp = ambientTemp + 25;
+    const tempDiff = panelTemp - PANEL_STC_TEMP;
+    const monthlyFactor = 1 + (tempDiff * PANEL_TEMPERATURE_COEFFICIENT);
+    totalAdjustment += monthlyFactor;
+  }
+
+  return totalAdjustment / monthCount; // Return average monthly factor
+}
 
 // ============================================
 // INCENTIVES & PROGRAMS

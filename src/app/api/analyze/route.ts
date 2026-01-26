@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { analyzeRoofImageFromBuffer } from '@/lib/analysis/roofAnalysis';
 import { getLocationSolarPotential } from '@/lib/analysis/solarPotential';
 import { calculateRecommendation } from '@/lib/utils/scoreCalculation';
-import { generateFinancialSummary, convertToRoofAnalysisResult } from '@/lib/ai/geminiService';
+import { generateFinancialSummary, convertToRoofAnalysisResult } from '@/lib/ai/openaiService';
 import { Address } from '@/types/address';
 import { AnalyzeAPIResponse } from '@/types/api';
 import { supabase } from '@/lib/supabase';
