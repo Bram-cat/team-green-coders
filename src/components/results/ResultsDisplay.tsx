@@ -181,7 +181,7 @@ export function ResultsDisplay({
             Seasonal <span className="text-accent">Production</span> Analysis
           </h3>
           <p className="text-muted-foreground font-medium text-lg leading-snug max-w-3xl">
-            Understand how your solar system performs throughout the year. PEI's seasonal patterns
+            Understand how your solar system performs throughout the year. PEI&apos;s seasonal patterns
             show strong summer production and reduced winter output.
           </p>
         </div>
