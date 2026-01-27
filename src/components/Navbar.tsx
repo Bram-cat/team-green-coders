@@ -18,6 +18,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/NavigationMenu";
 import { Button } from "@/components/ui/Button";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -110,6 +111,7 @@ export function Navbar() {
 
         <div className="flex items-center gap-4">
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
             <SignedIn>
               <Link
                 href="/profile"
@@ -216,7 +218,11 @@ export function Navbar() {
             History
           </Link>
 
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <span className="text-sm font-medium">Theme</span>
+              <ThemeToggle />
+            </div>
             <SignedIn>
               <div className="flex items-center justify-between px-2">
                 <Link href="/profile" onClick={() => setIsOpen(false)}>

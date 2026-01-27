@@ -4,6 +4,7 @@ import {
 import type { Metadata } from 'next';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 export const metadata: Metadata = {
   title: 'PEI Solar Panel Advisor',
@@ -17,12 +18,28 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  const theme = localStorage.getItem('solarpei-theme') || 'system';
+                  const isDark = theme === 'dark' ||
+                    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                  if (isDark) document.documentElement.classList.add('dark');
+                })();
+              `,
+            }}
+          />
+        </head>
         <body className="min-h-screen bg-background font-sans antialiased">
-          <Navbar />
-          <main>
-            {children}
-          </main>
+          <ThemeProvider>
+            <Navbar />
+            <main>
+              {children}
+            </main>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
