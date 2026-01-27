@@ -208,11 +208,17 @@ export async function exportToPDF(options: PDFExportOptions): Promise<void> {
 
       pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2])
       pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(suggestion.title, margin + 10, yPosition)
+
+      yPosition += 5
+
       pdf.setFont('helvetica', 'normal')
-      const lines = pdf.splitTextToSize(suggestion, pageWidth - margin - 20)
+      pdf.setFontSize(9)
+      const lines = pdf.splitTextToSize(suggestion.description, pageWidth - margin - 20)
       pdf.text(lines, margin + 10, yPosition)
 
-      yPosition += (lines.length * 5) + 8
+      yPosition += (lines.length * 4) + 10
     })
   }
 
