@@ -168,7 +168,7 @@ export function ResultsDisplay({
           <SavingsCalculator
             systemSizeKW={recommendation.systemSizeKW}
             annualProductionKWh={recommendation.estimatedAnnualProductionKWh}
-            installationCost={recommendation.financials.totalSystemCost}
+            installationCost={recommendation.financials.estimatedSystemCost}
             defaultMonthlyBill={174}
           />
         </section>
@@ -272,7 +272,7 @@ export function ResultsDisplay({
           systemSizeKW: recommendation.systemSizeKW,
           panelCount: recommendation.panelCount,
           annualProductionKWh: recommendation.estimatedAnnualProductionKWh,
-          estimatedCost: recommendation.financials?.totalSystemCost,
+          estimatedCost: recommendation.financials?.estimatedSystemCost,
           address: geocodedLocation?.formattedAddress
         }}
         analysisType="plan"
