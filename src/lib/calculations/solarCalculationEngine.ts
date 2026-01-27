@@ -10,15 +10,15 @@
  */
 
 import {
-  PEI_ELECTRICITY_RATES,
-  PEI_INSTALLATION_COSTS,
-  PANEL_WATTAGE_BY_TYPE,
-  PANEL_EFFICIENCY_BY_TYPE,
-  ROOF_MATERIAL_COST_MULTIPLIER,
-  PEI_MONTHLY_AVG_TEMP,
-  calculateSnowLossFactor,
-  calculateCombinedEfficiency,
-  calculateTemperatureAdjustment
+    PEI_ELECTRICITY_RATES,
+    PEI_INSTALLATION_COSTS,
+    PANEL_WATTAGE_BY_TYPE,
+    PANEL_EFFICIENCY_BY_TYPE,
+    ROOF_MATERIAL_COST_MULTIPLIER,
+    PEI_MONTHLY_AVG_TEMP,
+    calculateSnowLossFactor,
+    calculateCombinedEfficiency,
+    calculateTemperatureAdjustment
 } from '@/lib/data/peiSolarData';
 
 // ============================================
@@ -66,7 +66,7 @@ export interface CalculationInputs {
 
 const PANEL_WATTAGE = 400; // Watts per panel (standard 2024 - can be overridden)
 const PANEL_AREA = 1.7; // m² per panel (standard size)
-const PEI_PV_POTENTIAL = 1459; // kWh/kWp annual (Halifax/Maritime climate)
+const PEI_PV_POTENTIAL = 1174.9; // kWh/kWp annual (Measured for Charlottetown PEI @ 36° tilt)
 const ELECTRICITY_RATE = 0.174; // $/kWh for PEI (Maritime Electric)
 const INSTALLATION_COST_PER_WATT = 3.00; // $/W (cash purchase median - varies by panel type)
 const FIRE_CODE_SETBACK = 0.9; // meters (3 ft from edges)
@@ -84,27 +84,27 @@ const FIRE_CODE_SETBACK = 0.9; // meters (3 ft from edges)
  * @returns Tilt factor (0.85-1.05)
  */
 function calculateTiltFactor(roofPitchDegrees: number, orientation: string): number {
-  const OPTIMAL_TILT = 44; // PEI optimal tilt angle
-  const deviation = Math.abs(roofPitchDegrees - OPTIMAL_TILT);
+    const OPTIMAL_TILT = 44; // PEI optimal tilt angle
+    const deviation = Math.abs(roofPitchDegrees - OPTIMAL_TILT);
 
-  let tiltFactor = 1.0;
+    let tiltFactor = 1.0;
 
-  if (deviation <= 5) {
-    tiltFactor = 1.0; // Within 5° of optimal = no penalty
-  } else if (deviation <= 10) {
-    tiltFactor = 0.98; // 2% reduction
-  } else if (deviation <= 20) {
-    tiltFactor = 0.95; // 5% reduction
-  } else {
-    tiltFactor = 0.90; // 10% reduction for very steep/flat roofs
-  }
+    if (deviation <= 5) {
+        tiltFactor = 1.0; // Within 5° of optimal = no penalty
+    } else if (deviation <= 10) {
+        tiltFactor = 0.98; // 2% reduction
+    } else if (deviation <= 20) {
+        tiltFactor = 0.95; // 5% reduction
+    } else {
+        tiltFactor = 0.90; // 10% reduction for very steep/flat roofs
+    }
 
-  // Bonus for perfect south-facing at optimal tilt
-  if (orientation === 'south' && deviation <= 5) {
-    tiltFactor = 1.05; // 5% bonus for perfect conditions
-  }
+    // Bonus for perfect south-facing at optimal tilt
+    if (orientation === 'south' && deviation <= 5) {
+        tiltFactor = 1.05; // 5% bonus for perfect conditions
+    }
 
-  return tiltFactor;
+    return tiltFactor;
 }
 
 /**
@@ -115,32 +115,32 @@ function calculateTiltFactor(roofPitchDegrees: number, orientation: string): num
  * @returns Adjusted shading level
  */
 function adjustShadingLevel(
-  aiShadingLevel: string,
-  shadePatterns?: {
-    shadeMorning: boolean;
-    shadeAfternoon: boolean;
-    shadeSeasonal: boolean;
-  }
+    aiShadingLevel: string,
+    shadePatterns?: {
+        shadeMorning: boolean;
+        shadeAfternoon: boolean;
+        shadeSeasonal: boolean;
+    }
 ): 'low' | 'medium' | 'high' {
-  if (!shadePatterns) return aiShadingLevel as 'low' | 'medium' | 'high';
+    if (!shadePatterns) return aiShadingLevel as 'low' | 'medium' | 'high';
 
-  let shadingScore = 0;
+    let shadingScore = 0;
 
-  // Convert AI level to numeric score
-  if (aiShadingLevel === 'low') shadingScore = 1;
-  else if (aiShadingLevel === 'medium') shadingScore = 2;
-  else if (aiShadingLevel === 'high') shadingScore = 3;
+    // Convert AI level to numeric score
+    if (aiShadingLevel === 'low') shadingScore = 1;
+    else if (aiShadingLevel === 'medium') shadingScore = 2;
+    else if (aiShadingLevel === 'high') shadingScore = 3;
 
-  // User-reported shading increases score
-  if (shadePatterns.shadeMorning) shadingScore += 0.5;
-  if (shadePatterns.shadeAfternoon) shadingScore += 0.5;
-  // Seasonal shading is less impactful (deciduous trees)
-  if (shadePatterns.shadeSeasonal) shadingScore -= 0.3;
+    // User-reported shading increases score
+    if (shadePatterns.shadeMorning) shadingScore += 0.5;
+    if (shadePatterns.shadeAfternoon) shadingScore += 0.5;
+    // Seasonal shading is less impactful (deciduous trees)
+    if (shadePatterns.shadeSeasonal) shadingScore -= 0.3;
 
-  // Convert back to categorical level
-  if (shadingScore <= 1.2) return 'low';
-  if (shadingScore <= 2.5) return 'medium';
-  return 'high';
+    // Convert back to categorical level
+    if (shadingScore <= 1.2) return 'low';
+    if (shadingScore <= 2.5) return 'medium';
+    return 'high';
 }
 
 // ============================================

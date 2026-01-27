@@ -1,10 +1,8 @@
 "use client"
 
 import { useState, useMemo } from 'react'
-import { Card, CardContent } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import { DollarSign, TrendingUp, Calendar, Zap } from 'lucide-react'
-import { PEI_ELECTRICITY_RATES, PEI_SOLAR_DATA } from '@/lib/data/peiSolarData'
+import { PEI_ELECTRICITY_RATES } from '@/lib/data/peiSolarData'
 
 interface SavingsCalculatorProps {
   systemSizeKW: number
@@ -25,7 +23,7 @@ export function SavingsCalculator({
   const calculations = useMemo(() => {
     const annualBill = monthlyBill * 12
     const monthlyConsumption = (annualBill - (PEI_ELECTRICITY_RATES.monthlyBasicCharge * 12)) /
-                                (PEI_ELECTRICITY_RATES.residentialRate * 12)
+      (PEI_ELECTRICITY_RATES.residentialRate * 12)
     const annualConsumption = monthlyConsumption * 12
 
     // Calculate coverage percentage
@@ -68,34 +66,26 @@ export function SavingsCalculator({
   }, [monthlyBill, annualProductionKWh, installationCost])
 
   return (
-    <Card className="border-primary/20">
-      <CardContent className="p-6">
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
-                Real-Time Savings Calculator
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Adjust your monthly bill to see personalized savings estimates
-              </p>
+    <div className="space-y-10">
+      {/* Slider Section */}
+      <div className="bg-white rounded-[3rem] p-8 md:p-12 shadow-2xl border border-border/40 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] -mr-32 -mt-32" />
+
+        <div className="space-y-8 relative z-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Energy Consumption Profile</h4>
+              <p className="text-2xl font-black text-foreground tracking-tight">Average Monthly Electric Bill</p>
+            </div>
+            <div className="bg-primary/5 px-8 py-4 rounded-[2rem] border border-primary/10">
+              <div className="text-4xl font-black text-primary tracking-tighter">
+                ${monthlyBill.toFixed(0)} <span className="text-xs font-bold text-primary/40 uppercase tracking-widest ml-2">CAD / Mo</span>
+              </div>
             </div>
           </div>
 
-          {/* Slider */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-foreground">
-                Average Monthly Electric Bill
-              </Label>
-              <div className="text-2xl font-bold text-primary">
-                ${monthlyBill.toFixed(0)} <span className="text-sm font-normal text-muted-foreground">CAD/month</span>
-              </div>
-            </div>
-
-            <div className="relative">
+          <div className="space-y-6">
+            <div className="relative h-4 flex items-center">
               <input
                 type="range"
                 min="50"
@@ -103,148 +93,172 @@ export function SavingsCalculator({
                 step="10"
                 value={monthlyBill}
                 onChange={(e) => setMonthlyBill(parseFloat(e.target.value))}
-                className="w-full h-3 bg-muted rounded-lg appearance-none cursor-pointer slider"
+                className="w-full h-2.5 bg-muted rounded-full appearance-none cursor-pointer slider-premium"
                 style={{
                   background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((monthlyBill - 50) / 450) * 100}%, hsl(var(--muted)) ${((monthlyBill - 50) / 450) * 100}%, hsl(var(--muted)) 100%)`
                 }}
               />
-              <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                <span>$50</span>
-                <span>$275</span>
-                <span>$500</span>
-              </div>
+            </div>
+            <div className="flex justify-between px-2">
+              {[50, 150, 250, 350, 500].map((val) => (
+                <div key={val} className="flex flex-col items-center gap-2">
+                  <div className={`h-1.5 w-0.5 rounded-full ${monthlyBill >= val ? 'bg-primary' : 'bg-muted'}`} />
+                  <span className={`text-[10px] font-black tracking-widest ${monthlyBill >= val ? 'text-primary' : 'text-muted-foreground/40'}`}>${val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Results Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          label="Monthly Return"
+          value={`$${calculations.monthlySavings.toFixed(0)}`}
+          subtext="Net Utility Offset"
+          color="text-emerald-600"
+          bgColor="bg-emerald-500/5"
+        />
+        <MetricCard
+          icon={<Calendar className="h-5 w-5" />}
+          label="Annual Yield"
+          value={`$${calculations.annualSavings.toFixed(0)}`}
+          subtext="Projected Savings"
+          color="text-blue-600"
+          bgColor="bg-blue-500/5"
+        />
+        <MetricCard
+          icon={<Zap className="h-5 w-5" />}
+          label="Reliance Offset"
+          value={`${calculations.offsetPercent}%`}
+          subtext="Energy Independence"
+          color="text-orange-600"
+          bgColor="bg-orange-500/5"
+        />
+        <MetricCard
+          icon={<DollarSign className="h-5 w-5" />}
+          label="Amortization"
+          value={`${calculations.simplePayback.toFixed(1)}`}
+          subtext="Years to Break-Even"
+          color="text-primary"
+          bgColor="bg-primary/5"
+        />
+      </div>
+
+      {/* 25-Year Projection Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 bg-foreground text-background rounded-[3.5rem] p-10 md:p-14 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-primary/20 blur-[100px] -mr-40 -mt-40 transition-all duration-1000 group-hover:bg-primary/30" />
+
+          <div className="relative z-10 space-y-10">
+            <div className="space-y-2">
+              <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.5em]">Wealth Accumulation</h4>
+              <p className="text-3xl font-black tracking-tighter text-white">25-Year Financial projection</p>
             </div>
 
-            <style jsx>{`
-              .slider::-webkit-slider-thumb {
-                appearance: none;
-                width: 24px;
-                height: 24px;
-                background: hsl(var(--primary));
-                border: 3px solid white;
-                border-radius: 50%;
-                cursor: pointer;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-              }
-              .slider::-moz-range-thumb {
-                width: 24px;
-                height: 24px;
-                background: hsl(var(--primary));
-                border: 3px solid white;
-                border-radius: 50%;
-                cursor: pointer;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-              }
-            `}</style>
-          </div>
-
-          {/* Results Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <MetricCard
-              icon={<TrendingUp className="h-4 w-4" />}
-              label="Monthly Savings"
-              value={`$${calculations.monthlySavings.toFixed(0)}`}
-              subtext="per month"
-              color="text-green-600 dark:text-green-400"
-            />
-            <MetricCard
-              icon={<Calendar className="h-4 w-4" />}
-              label="Annual Savings"
-              value={`$${calculations.annualSavings.toFixed(0)}`}
-              subtext="per year"
-              color="text-blue-600 dark:text-blue-400"
-            />
-            <MetricCard
-              icon={<Zap className="h-4 w-4" />}
-              label="Bill Offset"
-              value={`${calculations.offsetPercent}%`}
-              subtext="of your bill"
-              color="text-amber-600 dark:text-amber-400"
-            />
-            <MetricCard
-              icon={<DollarSign className="h-4 w-4" />}
-              label="Payback Period"
-              value={`${calculations.simplePayback.toFixed(1)}`}
-              subtext="years"
-              color="text-purple-600 dark:text-purple-400"
-            />
-          </div>
-
-          {/* 25-Year Projection */}
-          <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-6 space-y-3">
-            <h4 className="font-bold text-foreground text-lg">25-Year Financial Projection</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <div className="text-sm text-muted-foreground">Total Lifetime Savings</div>
-                <div className="text-3xl font-bold text-foreground">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="space-y-2">
+                <div className="text-5xl font-black text-white tracking-tighter">
                   ${calculations.twentyFiveYearSavings.toLocaleString()}
                 </div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/40 leading-none">Total Lifetime Accumulation</p>
               </div>
-              <div>
-                <div className="text-sm text-muted-foreground">Net Profit After Installation</div>
-                <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+              <div className="space-y-2">
+                <div className="text-5xl font-black text-primary tracking-tighter">
                   ${calculations.netProfit.toLocaleString()}
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary/40 leading-none">Net Profit (Post-Amortization)</p>
+              </div>
+            </div>
+
+            <div className="pt-10 border-t border-white/10 space-y-6">
+              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.3em]">
+                <span className="text-white/60">Break-Even Progress</span>
+                <span className="text-primary">Year {Math.ceil(calculations.simplePayback)} of 25</span>
+              </div>
+              <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-1000"
+                  style={{ width: `${Math.min(100, (calculations.simplePayback / 25) * 100)}%` }}
+                />
+              </div>
+              <p className="text-[10px] font-medium text-white/40 leading-relaxed max-w-xl italic">
+                * Projections include a 0.5% annual panel degradation factor and a 3% annual utility rate increase adjustment based on Maritime Electric historical data.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Comparison Card */}
+        <div className="bg-white rounded-[3.5rem] p-10 border border-border/40 shadow-2xl flex flex-col justify-between">
+          <div className="space-y-8">
+            <div className="space-y-1">
+              <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em]">Portfolio Edge</h4>
+              <p className="text-2xl font-black text-foreground tracking-tight leading-tight">Cost Comparison</p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                  <span>Traditional Grid</span>
+                  <span className="text-destructive">$25yr Exposure</span>
+                </div>
+                <div className="text-2xl font-black tracking-tighter text-foreground">
+                  ${(calculations.annualBill * 25 * 1.4).toLocaleString()}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                  <span>Solar Hybrid</span>
+                  <span className="text-emerald-600">Optimized Cost</span>
+                </div>
+                <div className="text-2xl font-black tracking-tighter text-foreground">
+                  ${(installationCost + (calculations.annualBill * 25 * 1.4 - calculations.twentyFiveYearSavings)).toLocaleString()}
                 </div>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Projection includes 0.5% annual panel degradation and 3% annual electricity rate increases.
-              Actual savings may vary based on energy consumption patterns and rate changes.
-            </p>
           </div>
 
-          {/* Break-even visualization */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Break-even progress</span>
-              <span className="font-semibold text-foreground">
-                Year {Math.ceil(calculations.simplePayback)} of 25
-              </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
-                style={{ width: `${Math.min(100, (calculations.simplePayback / 25) * 100)}%` }}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              After break-even, all savings are pure profit for the remaining {Math.max(0, 25 - Math.ceil(calculations.simplePayback))} years
-            </p>
-          </div>
-
-          {/* Comparison */}
-          <div className="border-t pt-4 space-y-3">
-            <h5 className="font-semibold text-foreground text-sm">Cost Comparison</h5>
-            <div className="space-y-2">
-              <ComparisonRow
-                label="Without Solar (25 years)"
-                amount={calculations.annualBill * 25 * 1.4}
-                color="text-red-600 dark:text-red-400"
-              />
-              <ComparisonRow
-                label="With Solar (25 years)"
-                amount={installationCost + (calculations.annualBill * 25 * 1.4 - calculations.twentyFiveYearSavings)}
-                color="text-green-600 dark:text-green-400"
-              />
-              <div className="pt-2 border-t">
-                <ComparisonRow
-                  label="Your Savings"
-                  amount={calculations.netProfit}
-                  color="text-primary"
-                  bold
-                />
-              </div>
+          <div className="pt-8 border-t border-border mt-8">
+            <div className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">Total Managed Savings</div>
+            <div className="text-4xl font-black tracking-tighter text-primary">
+              ${calculations.netProfit.toLocaleString()}
             </div>
           </div>
-
         </div>
-      </CardContent>
-    </Card>
-  )
-}
+      </div>
 
-function Label({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={className}>{children}</div>
+      <style jsx>{`
+        .slider-premium::-webkit-slider-thumb {
+          appearance: none;
+          width: 32px;
+          height: 32px;
+          background: hsl(var(--primary));
+          border: 4px solid white;
+          border-radius: 12px;
+          cursor: pointer;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+          transition: all 0.2s;
+        }
+        .slider-premium::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+          box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.3);
+        }
+        .slider-premium::-moz-range-thumb {
+          width: 32px;
+          height: 32px;
+          background: hsl(var(--primary));
+          border: 4px solid white;
+          border-radius: 12px;
+          cursor: pointer;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+      `}</style>
+    </div>
+  )
 }
 
 function MetricCard({
@@ -252,43 +266,26 @@ function MetricCard({
   label,
   value,
   subtext,
-  color
+  color,
+  bgColor
 }: {
   icon: React.ReactNode
   label: string
   value: string
   subtext: string
   color: string
+  bgColor: string
 }) {
   return (
-    <div className="bg-background border rounded-lg p-4 space-y-2">
-      <div className="flex items-center gap-2">
-        <div className={color}>{icon}</div>
-        <div className="text-xs text-muted-foreground">{label}</div>
+    <div className="bg-white border border-border/40 rounded-[2.5rem] p-8 space-y-4 shadow-xl hover:shadow-2xl hover:border-primary/20 transition-all group">
+      <div className={`w-12 h-12 rounded-2xl ${bgColor} flex items-center justify-center ${color} group-hover:scale-110 transition-transform`}>
+        {icon}
       </div>
-      <div className={`text-2xl font-bold ${color}`}>{value}</div>
-      <div className="text-xs text-muted-foreground">{subtext}</div>
-    </div>
-  )
-}
-
-function ComparisonRow({
-  label,
-  amount,
-  color,
-  bold = false
-}: {
-  label: string
-  amount: number
-  color: string
-  bold?: boolean
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className={`text-sm ${bold ? 'font-bold' : ''} text-foreground`}>{label}</span>
-      <span className={`text-sm ${bold ? 'font-bold text-lg' : ''} ${color}`}>
-        ${amount.toLocaleString()}
-      </span>
+      <div className="space-y-1">
+        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{label}</p>
+        <div className={`text-3xl font-black ${color} tracking-tighter`}>{value}</div>
+        <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">{subtext}</p>
+      </div>
     </div>
   )
 }
