@@ -22,7 +22,7 @@ export default function HomePage() {
         </div>
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto space-y-8 animate-fade-in-up">
           <div className="inline-block px-4 py-1.5 mb-2 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-md">
-            <span className="text-primary-foreground font-semibold tracking-wide text-sm uppercase">Supporting PEI's Solar Revolution</span>
+            <span className="text-primary-foreground font-semibold tracking-wide text-sm uppercase">Supporting PEI&apos;s Solar Revolution</span>
           </div>
           <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-tight">
             Powering PEI&apos;s <br />
