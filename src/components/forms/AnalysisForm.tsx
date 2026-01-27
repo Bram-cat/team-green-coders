@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FileUpload } from '@/components/ui/FileUpload';
+import { MultiImageUpload } from '@/components/forms/MultiImageUpload';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -15,7 +15,7 @@ interface AnalysisFormProps {
 }
 
 export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFormProps) {
-  const [file, setFile] = useState<File | null>(null);
+  const [images, setImages] = useState<File[]>([]);
   const [address, setAddress] = useState<Address>({
     street: '',
     city: '',
@@ -29,7 +29,7 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!file) newErrors.file = 'Please upload a roof image';
+    if (images.length === 0) newErrors.images = 'Please upload at least one roof image';
     if (!address.street.trim()) newErrors.street = 'Street address is required';
     if (!address.city.trim()) newErrors.city = 'City is required';
     if (!address.postalCode.trim()) newErrors.postalCode = 'Postal code is required';
@@ -49,7 +49,13 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
 
     try {
       const formData = new FormData();
-      formData.append('image', file!);
+
+      // Append all images
+      images.forEach((image, index) => {
+        formData.append(`image${index + 1}`, image);
+      });
+      formData.append('imageCount', images.length.toString());
+
       formData.append('street', address.street);
       formData.append('city', address.city);
       formData.append('postalCode', address.postalCode);
@@ -80,18 +86,14 @@ export function AnalysisForm({ onSuccess, onError, onLoadingChange }: AnalysisFo
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Roof Photo
-        </label>
-        <FileUpload
-          onFileSelect={setFile}
-          error={errors.file}
-        />
-        <p className="mt-2 text-xs text-gray-500">
-          Upload an aerial or angled photo of your roof. Google Maps satellite view works well.
-        </p>
-      </div>
+      <MultiImageUpload
+        onChange={setImages}
+        disabled={isLoading}
+        maxImages={3}
+      />
+      {errors.images && (
+        <p className="text-sm text-red-500 -mt-3">{errors.images}</p>
+      )}
 
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900">Property Address</h3>

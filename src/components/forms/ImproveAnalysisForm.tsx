@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FileUpload } from '@/components/ui/FileUpload';
+import { MultiImageUpload } from '@/components/forms/MultiImageUpload';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -15,7 +15,7 @@ interface ImproveAnalysisFormProps {
 }
 
 export function ImproveAnalysisForm({ onSuccess, onError, onLoadingChange }: ImproveAnalysisFormProps) {
-  const [file, setFile] = useState<File | null>(null);
+  const [images, setImages] = useState<File[]>([]);
   const [address, setAddress] = useState<Address>({
     street: '',
     city: '',
@@ -29,7 +29,7 @@ export function ImproveAnalysisForm({ onSuccess, onError, onLoadingChange }: Imp
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!file) newErrors.file = 'Please upload an image of your solar installation';
+    if (images.length === 0) newErrors.images = 'Please upload at least one image of your solar installation';
     if (!address.street.trim()) newErrors.street = 'Street address is required';
     if (!address.city.trim()) newErrors.city = 'City is required';
     if (!address.postalCode.trim()) newErrors.postalCode = 'Postal code is required';
@@ -49,7 +49,13 @@ export function ImproveAnalysisForm({ onSuccess, onError, onLoadingChange }: Imp
 
     try {
       const formData = new FormData();
-      formData.append('image', file!);
+
+      // Append all images
+      images.forEach((image, index) => {
+        formData.append(`image${index + 1}`, image);
+      });
+      formData.append('imageCount', images.length.toString());
+
       formData.append('street', address.street);
       formData.append('city', address.city);
       formData.append('postalCode', address.postalCode);
@@ -80,17 +86,15 @@ export function ImproveAnalysisForm({ onSuccess, onError, onLoadingChange }: Imp
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* File Upload */}
-      <div className="space-y-2">
-        <Label htmlFor="image">Solar Installation Photo</Label>
-        <FileUpload
-          onFileSelect={setFile}
-          error={errors.file}
-        />
-        <p className="text-sm text-muted-foreground">
-          Upload a photo showing your existing solar panel installation
-        </p>
-      </div>
+      {/* Multi-Image Upload */}
+      <MultiImageUpload
+        onChange={setImages}
+        disabled={isLoading}
+        maxImages={3}
+      />
+      {errors.images && (
+        <p className="text-sm text-red-500 -mt-3">{errors.images}</p>
+      )}
 
       {/* Actual Panel Count (Optional) */}
       <div className="space-y-2">
