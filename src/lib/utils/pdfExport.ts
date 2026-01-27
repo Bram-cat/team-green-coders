@@ -111,7 +111,7 @@ export async function exportToPDF(options: PDFExportOptions): Promise<void> {
     { label: 'Roof Area', value: `${roofAnalysis.roofAreaSqMeters} m²` },
     { label: 'Usable Area', value: `${roofAnalysis.usableAreaPercentage}%` },
     { label: 'Roof Pitch', value: `${roofAnalysis.roofPitchDegrees}°` },
-    { label: 'Roof Orientation', value: roofAnalysis.roofOrientation },
+    { label: 'Roof Orientation', value: roofAnalysis.roofOrientation || 'Not specified' },
     { label: 'Shading Level', value: roofAnalysis.shadingLevel.charAt(0).toUpperCase() + roofAnalysis.shadingLevel.slice(1) }
   ]
 

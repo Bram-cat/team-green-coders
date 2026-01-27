@@ -6,6 +6,7 @@ export interface RoofAnalysisResult {
   roofPitchDegrees: number;
   complexity: 'simple' | 'moderate' | 'complex';
   usableAreaPercentage: number;
+  roofOrientation?: string; // Optional orientation from AI analysis
 }
 
 export interface SolarPotentialResult {

@@ -103,6 +103,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
       roofPitchDegrees: roofAnalysisResult.roofPitchDegrees,
       complexity: roofAnalysisResult.complexity,
       usableAreaPercentage: roofAnalysisResult.usableAreaPercentage,
+      roofOrientation: roofAnalysisResult.aiAnalysis?.orientation || 'south', // Default to south if not available
     };
 
     // Extract base solar potential (without extra metadata)
