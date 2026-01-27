@@ -80,7 +80,7 @@ export async function exportToPDF(options: PDFExportOptions): Promise<void> {
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 20, 'F')
 
   const scoreColor: [number, number, number] = recommendation.suitabilityScore >= 80 ? [34, 197, 94] :
-                     recommendation.suitabilityScore >= 60 ? [251, 191, 36] : [239, 68, 68]
+    recommendation.suitabilityScore >= 60 ? [251, 191, 36] : [239, 68, 68]
   pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2])
   pdf.setFontSize(32)
   pdf.setFont('helvetica', 'bold')
@@ -262,7 +262,7 @@ export async function exportResultsPageToPDF(
     useCORS: true,
     logging: false,
     backgroundColor: '#ffffff'
-  })
+  } as any)
 
   const imgData = canvas.toDataURL('image/png')
   const pdf = new jsPDF({
