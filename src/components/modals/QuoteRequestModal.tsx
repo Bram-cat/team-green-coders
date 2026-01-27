@@ -250,16 +250,9 @@ export function QuoteRequestModal({
                           </div>
                           {company.category && (
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {company.category
-                                .slice(0, 2)
-                                .map((category, i) => (
-                                  <span
-                                    key={i}
-                                    className="inline-block px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded-full"
-                                  >
-                                    {category}
-                                  </span>
-                                ))}
+                              <span className="inline-block px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded-full">
+                                {company.category}
+                              </span>
                             </div>
                           )}
                         </div>
