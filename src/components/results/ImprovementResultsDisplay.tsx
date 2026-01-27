@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
 import { SolarCompaniesCard } from './SolarCompaniesCard';
 import { SavingsCalculator } from '@/components/calculators/SavingsCalculator';
+import { SeasonalProductionChart } from '@/components/charts/SeasonalProductionChart';
 
 interface ImprovementResultsDisplayProps {
   currentInstallation: {
@@ -231,6 +232,12 @@ export function ImprovementResultsDisplay({
           />
         </CardContent>
       </Card>
+
+      {/* Seasonal Production Chart */}
+      <SeasonalProductionChart
+        systemSizeKW={currentInstallation.estimatedSystemSizeKW}
+        title="Current System Monthly Production"
+      />
 
       {/* Improvement Suggestions */}
       <Card>

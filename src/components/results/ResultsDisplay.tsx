@@ -7,6 +7,7 @@ import { FinancialSummary } from './FinancialSummary';
 import { SolarPanelVisualization } from './SolarPanelVisualization';
 import { SolarCompaniesCard } from './SolarCompaniesCard';
 import { SavingsCalculator } from '@/components/calculators/SavingsCalculator';
+import { SeasonalProductionChart } from '@/components/charts/SeasonalProductionChart';
 import { SolarRecommendation, RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
 import { GeocodedLocation } from '@/types/address';
 
@@ -149,6 +150,23 @@ export function ResultsDisplay({
           />
         </section>
       )}
+
+      {/* 3.75 SEASONAL PRODUCTION VISUALIZATION */}
+      <section className="space-y-8">
+        <div className="flex flex-col gap-4">
+          <h3 className="text-4xl font-black tracking-tighter uppercase italic text-foreground">
+            Seasonal <span className="text-accent">Production</span> Analysis
+          </h3>
+          <p className="text-muted-foreground font-medium text-lg leading-snug max-w-3xl">
+            Understand how your solar system performs throughout the year. PEI's seasonal patterns
+            show strong summer production and reduced winter output.
+          </p>
+        </div>
+        <SeasonalProductionChart
+          systemSizeKW={recommendation.systemSizeKW}
+          title="Monthly Energy Production Forecast"
+        />
+      </section>
 
       {/* 4. EXECUTION ROADMAP */}
       <section className="bg-muted/10 rounded-[5rem] p-10 md:p-20 relative overflow-hidden group">
