@@ -170,8 +170,8 @@ export function SolarPanelVisualization({
             <div className="flex items-center gap-6 flex-1 max-w-sm">
               <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-primary rounded-full transition-all duration-[2000ms]"
-                  style={{ width: `${aiConfidence || 95}%` }}
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${aiConfidence || 95}%`, transitionDuration: '2000ms' }}
                 />
               </div>
               <div className="text-xl font-black text-primary tracking-tighter leading-none">{(aiConfidence || 95)}%</div>

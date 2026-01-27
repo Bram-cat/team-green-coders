@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback } from 'react'
+import Image from 'next/image'
 import { Upload, X, Camera, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -230,10 +231,12 @@ function ImageUploadSlot({
         {slot.preview ? (
           // Preview
           <div className="relative w-full h-full">
-            <img
+            <Image
               src={slot.preview}
               alt={slot.label}
-              className="w-full h-full object-cover rounded-lg"
+              fill
+              className="object-cover rounded-lg"
+              unoptimized
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-lg" />
 
