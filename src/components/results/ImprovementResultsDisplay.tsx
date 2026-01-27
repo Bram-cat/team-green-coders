@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
 import { SolarCompaniesCard } from './SolarCompaniesCard';
+import { SavingsCalculator } from '@/components/calculators/SavingsCalculator';
 
 interface ImprovementResultsDisplayProps {
   currentInstallation: {
@@ -203,6 +204,31 @@ export function ImprovementResultsDisplay({
             </span>{' '}
             of annual energy production.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Interactive Savings Calculator */}
+      <Card className="border-primary/20">
+        <CardContent className="p-6">
+          <div className="space-y-4 mb-6">
+            <h2 className="text-2xl font-bold text-foreground">Improved System Savings</h2>
+            <p className="text-muted-foreground text-sm">
+              See how the suggested improvements will impact your energy savings and payback period.
+              Adjust your monthly bill to see personalized projections.
+            </p>
+          </div>
+          <SavingsCalculator
+            systemSizeKW={currentInstallation.estimatedSystemSizeKW}
+            annualProductionKWh={
+              // Current production + additional from improvements
+              currentInstallation.estimatedSystemSizeKW * 1174.9 + improvements.estimatedAdditionalProductionKWh
+            }
+            installationCost={
+              // Calculate total improvement cost from suggestions
+              improvements.suggestions.reduce((total, s) => total + (s.estimatedCost || 0), 0)
+            }
+            defaultMonthlyBill={174}
+          />
         </CardContent>
       </Card>
 

@@ -6,6 +6,7 @@ import { SuggestionsSection } from './SuggestionsSection';
 import { FinancialSummary } from './FinancialSummary';
 import { SolarPanelVisualization } from './SolarPanelVisualization';
 import { SolarCompaniesCard } from './SolarCompaniesCard';
+import { SavingsCalculator } from '@/components/calculators/SavingsCalculator';
 import { SolarRecommendation, RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
 import { GeocodedLocation } from '@/types/address';
 
@@ -127,6 +128,27 @@ export function ResultsDisplay({
           </div>
         </div>
       </section>
+
+      {/* 3.5 INTERACTIVE SAVINGS CALCULATOR */}
+      {recommendation.financials && (
+        <section className="space-y-8">
+          <div className="flex flex-col gap-4">
+            <h3 className="text-4xl font-black tracking-tighter uppercase italic text-foreground">
+              Dynamic <span className="text-primary">Savings</span> Simulator
+            </h3>
+            <p className="text-muted-foreground font-medium text-lg leading-snug max-w-3xl">
+              Adjust your monthly electricity bill to see personalized savings projections.
+              Our real-time calculator shows how solar fits your specific energy consumption.
+            </p>
+          </div>
+          <SavingsCalculator
+            systemSizeKW={recommendation.systemSizeKW}
+            annualProductionKWh={recommendation.estimatedAnnualProductionKWh}
+            installationCost={recommendation.financials.totalSystemCost}
+            defaultMonthlyBill={174}
+          />
+        </section>
+      )}
 
       {/* 4. EXECUTION ROADMAP */}
       <section className="bg-muted/10 rounded-[5rem] p-10 md:p-20 relative overflow-hidden group">
