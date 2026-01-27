@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { DollarSign, TrendingUp, Calendar, Zap } from 'lucide-react'
 import { PEI_ELECTRICITY_RATES } from '@/lib/data/peiSolarData'
+import { ScreenReaderAnnouncement } from '@/components/ui/ScreenReaderAnnouncement'
 
 interface SavingsCalculatorProps {
   systemSizeKW: number
@@ -18,6 +19,7 @@ export function SavingsCalculator({
   defaultMonthlyBill = 174
 }: SavingsCalculatorProps) {
   const [monthlyBill, setMonthlyBill] = useState(defaultMonthlyBill)
+  const [announcement, setAnnouncement] = useState('')
 
   // Calculate savings based on slider value
   const calculations = useMemo(() => {
@@ -65,10 +67,22 @@ export function SavingsCalculator({
     }
   }, [monthlyBill, annualProductionKWh, installationCost])
 
+  // Announce changes to screen readers with debounce
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      setAnnouncement(
+        `Monthly bill set to $${monthlyBill}. Monthly savings: $${calculations.monthlySavings.toFixed(0)}. Annual savings: $${calculations.annualSavings.toFixed(0)}.`
+      )
+    }, 500)
+    return () => clearTimeout(debounce)
+  }, [monthlyBill, calculations.monthlySavings, calculations.annualSavings])
+
   return (
-    <div className="space-y-10">
-      {/* Slider Section */}
-      <div className="bg-white rounded-[3rem] p-8 md:p-12 shadow-2xl border border-border/40 relative overflow-hidden group">
+    <>
+      <ScreenReaderAnnouncement message={announcement} />
+      <div className="space-y-10">
+        {/* Slider Section */}
+        <div className="bg-white rounded-[3rem] p-8 md:p-12 shadow-2xl border border-border/40 relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] -mr-32 -mt-32" />
 
         <div className="space-y-8 relative z-10">
@@ -93,6 +107,11 @@ export function SavingsCalculator({
                 step="10"
                 value={monthlyBill}
                 onChange={(e) => setMonthlyBill(parseFloat(e.target.value))}
+                aria-label="Adjust monthly electricity bill"
+                aria-valuemin={50}
+                aria-valuemax={500}
+                aria-valuenow={monthlyBill}
+                aria-valuetext={`$${monthlyBill} CAD per month`}
                 className="w-full h-2.5 bg-muted rounded-full appearance-none cursor-pointer slider-premium"
                 style={{
                   background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((monthlyBill - 50) / 450) * 100}%, hsl(var(--muted)) ${((monthlyBill - 50) / 450) * 100}%, hsl(var(--muted)) 100%)`
@@ -257,7 +276,8 @@ export function SavingsCalculator({
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
         }
       `}</style>
-    </div>
+      </div>
+    </>
   )
 }
 

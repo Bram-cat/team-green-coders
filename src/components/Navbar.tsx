@@ -59,6 +59,7 @@ export function Navbar() {
                       navigationMenuTriggerStyle(),
                       pathname === "/" && "bg-primary/10 text-primary",
                     )}
+                    aria-current={pathname === "/" ? "page" : undefined}
                   >
                     Home
                   </NavigationMenuLink>
@@ -100,6 +101,7 @@ export function Navbar() {
                       navigationMenuTriggerStyle(),
                       pathname === "/history" && "bg-primary/10 text-primary",
                     )}
+                    aria-current={pathname === "/history" ? "page" : undefined}
                   >
                     History
                   </NavigationMenuLink>
