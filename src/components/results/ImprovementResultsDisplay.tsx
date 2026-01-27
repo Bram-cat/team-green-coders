@@ -6,6 +6,7 @@ import { RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
 import { SolarCompaniesCard } from './SolarCompaniesCard';
 import { SavingsCalculator } from '@/components/calculators/SavingsCalculator';
 import { SeasonalProductionChart } from '@/components/charts/SeasonalProductionChart';
+import { QuoteRequestModal } from '@/components/modals/QuoteRequestModal';
 import { exportToPDF } from '@/lib/utils/pdfExport';
 
 interface ImprovementResultsDisplayProps {
@@ -46,6 +47,7 @@ export function ImprovementResultsDisplay({
   aiConfidence,
 }: ImprovementResultsDisplayProps) {
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
   const priorityColors = {
     high: 'bg-red-50 text-red-900 border-red-200 dark:bg-red-950/30 dark:text-red-200 dark:border-red-800',
@@ -364,6 +366,15 @@ export function ImprovementResultsDisplay({
       {/* Action Buttons */}
       <div className="flex flex-col md:flex-row gap-4">
         <Button
+          onClick={() => setIsQuoteModalOpen(true)}
+          className="flex-1 bg-accent hover:bg-accent/90"
+        >
+          <svg className="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          Request Quotes for Improvements
+        </Button>
+        <Button
           onClick={handleExportPDF}
           disabled={isExportingPDF}
           className="flex-1 bg-primary hover:bg-primary/90"
@@ -380,6 +391,18 @@ export function ImprovementResultsDisplay({
           Analyze Another Installation
         </Button>
       </div>
+
+      {/* Quote Request Modal */}
+      <QuoteRequestModal
+        isOpen={isQuoteModalOpen}
+        onClose={() => setIsQuoteModalOpen(false)}
+        analysisData={{
+          systemSizeKW: currentInstallation.estimatedSystemSizeKW,
+          panelCount: currentInstallation.panelCount,
+          annualProductionKWh: currentInstallation.estimatedSystemSizeKW * 1174.9 + improvements.estimatedAdditionalProductionKWh,
+        }}
+        analysisType="improve"
+      />
     </div>
   );
 }

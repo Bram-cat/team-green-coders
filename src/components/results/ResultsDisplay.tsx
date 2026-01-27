@@ -8,6 +8,7 @@ import { SolarPanelVisualization } from './SolarPanelVisualization';
 import { SolarCompaniesCard } from './SolarCompaniesCard';
 import { SavingsCalculator } from '@/components/calculators/SavingsCalculator';
 import { SeasonalProductionChart } from '@/components/charts/SeasonalProductionChart';
+import { QuoteRequestModal } from '@/components/modals/QuoteRequestModal';
 import { exportToPDF } from '@/lib/utils/pdfExport';
 import { SolarRecommendation, RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
 import { GeocodedLocation } from '@/types/address';
@@ -42,6 +43,7 @@ export function ResultsDisplay({
   // Use AI summary if available, otherwise use the default explanation
   const displayExplanation = aiSummary || recommendation.explanation;
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
   const handleExportPDF = async () => {
     setIsExportingPDF(true);
@@ -223,23 +225,34 @@ export function ResultsDisplay({
         <div className="h-32 w-px bg-gradient-to-b from-primary/40 to-transparent" />
 
         {/* Action Buttons */}
-        <div className="flex flex-col md:flex-row gap-4 w-full max-w-2xl">
+        <div className="flex flex-col md:flex-row gap-4 w-full max-w-3xl">
+          <Button
+            variant="default"
+            onClick={() => setIsQuoteModalOpen(true)}
+            className="flex-1 px-8 h-20 rounded-[3rem] font-black text-xl bg-accent hover:bg-accent/90 transition-all duration-300 shadow-2xl hover:scale-105"
+          >
+            <svg className="mr-4 w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Request Quotes
+          </Button>
+
           <Button
             variant="default"
             onClick={handleExportPDF}
             disabled={isExportingPDF}
-            className="flex-1 px-12 h-20 rounded-[3rem] font-black text-xl bg-primary hover:bg-primary/90 transition-all duration-300 shadow-2xl hover:scale-105"
+            className="flex-1 px-8 h-20 rounded-[3rem] font-black text-xl bg-primary hover:bg-primary/90 transition-all duration-300 shadow-2xl hover:scale-105"
           >
             <svg className="mr-4 w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            {isExportingPDF ? 'Generating PDF...' : 'Download PDF Report'}
+            {isExportingPDF ? 'Generating...' : 'Download PDF'}
           </Button>
 
           <Button
             variant="outline"
             onClick={onReset}
-            className="flex-1 px-12 h-20 rounded-[3rem] font-black text-xl hover:bg-destructive hover:text-white hover:border-destructive transition-all duration-500 group shadow-2xl bg-white border-2 hover:scale-105"
+            className="flex-1 px-8 h-20 rounded-[3rem] font-black text-xl hover:bg-destructive hover:text-white hover:border-destructive transition-all duration-500 group shadow-2xl bg-white border-2 hover:scale-105"
           >
             <svg className="mr-4 w-7 h-7 group-hover:rotate-180 transition-transform duration-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -250,6 +263,20 @@ export function ResultsDisplay({
 
         <p className="text-sm font-bold text-muted-foreground uppercase tracking-[0.3em] opacity-40">System Release 2.5 &bull; Core Optimized</p>
       </div>
+
+      {/* Quote Request Modal */}
+      <QuoteRequestModal
+        isOpen={isQuoteModalOpen}
+        onClose={() => setIsQuoteModalOpen(false)}
+        analysisData={{
+          systemSizeKW: recommendation.systemSizeKW,
+          panelCount: recommendation.panelCount,
+          annualProductionKWh: recommendation.estimatedAnnualProductionKWh,
+          estimatedCost: recommendation.financials?.totalSystemCost,
+          address: geocodedLocation?.formattedAddress
+        }}
+        analysisType="plan"
+      />
     </div>
   );
 }
