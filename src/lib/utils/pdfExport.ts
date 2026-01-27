@@ -162,7 +162,7 @@ export async function exportToPDF(options: PDFExportOptions): Promise<void> {
       pdf.setFont('helvetica', 'normal')
       pdf.text(item.label, margin, yPosition)
 
-      pdf.setTextColor(...item.color)
+      pdf.setTextColor(item.color[0], item.color[1], item.color[2])
       pdf.setFont('helvetica', 'bold')
       pdf.text(item.value, pageWidth - margin, yPosition, { align: 'right' })
 
