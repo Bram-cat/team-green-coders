@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeRoofImageFromBuffer } from '@/lib/analysis/roofAnalysis';
+import { analyzeMultipleRoofImages } from '@/lib/analysis/roofAnalysis';
 import { getLocationSolarPotential } from '@/lib/analysis/solarPotential';
 import { calculateRecommendation } from '@/lib/utils/scoreCalculation';
-import { generateFinancialSummary, convertToRoofAnalysisResult } from '@/lib/ai/openaiService';
+import { generateFinancialSummary } from '@/lib/ai/openaiService';
 import { Address } from '@/types/address';
 import { AnalyzeAPIResponse } from '@/types/api';
 import { supabase } from '@/lib/supabase';
@@ -16,28 +16,49 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
   try {
     const formData = await request.formData();
 
-    // Extract and validate image
-    const image = formData.get('image') as File | null;
-    if (!image) {
+    // Extract and validate images (support 1-3 images)
+    const images: Array<{ file: File; buffer: Buffer; mimeType: string }> = [];
+
+    for (let i = 1; i <= 3; i++) {
+      const image = formData.get(`image${i}`) as File | null;
+      if (image) {
+        // Validate image type
+        if (!ALLOWED_TYPES.includes(image.type)) {
+          return NextResponse.json(
+            { success: false, error: { code: 'INVALID_TYPE', message: `Image ${i} must be a JPEG or PNG file.` } },
+            { status: 400 }
+          );
+        }
+
+        // Validate image size
+        if (image.size > MAX_FILE_SIZE) {
+          return NextResponse.json(
+            { success: false, error: { code: 'FILE_TOO_LARGE', message: `Image ${i} must be under 10MB.` } },
+            { status: 400 }
+          );
+        }
+
+        // Convert to buffer
+        const bytes = await image.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        images.push({
+          file: image,
+          buffer,
+          mimeType: image.type
+        });
+      }
+    }
+
+    // Require at least one image
+    if (images.length === 0) {
       return NextResponse.json(
-        { success: false, error: { code: 'MISSING_IMAGE', message: 'Please upload a roof image.' } },
+        { success: false, error: { code: 'MISSING_IMAGE', message: 'Please upload at least one roof image.' } },
         { status: 400 }
       );
     }
 
-    if (!ALLOWED_TYPES.includes(image.type)) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_TYPE', message: 'Please upload a JPEG or PNG image.' } },
-        { status: 400 }
-      );
-    }
-
-    if (image.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { success: false, error: { code: 'FILE_TOO_LARGE', message: 'Image must be under 10MB.' } },
-        { status: 400 }
-      );
-    }
+    console.log(`Processing ${images.length} image(s) for analysis...`);
 
     // Extract and validate address and monthly bill
     const address: Address = {
@@ -58,17 +79,20 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
       );
     }
 
-    // Convert image to buffer (no file system needed - works on serverless)
-    const bytes = await image.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Convert primary image to base64 for client-side visualization
+    const primaryImage = images[0];
+    const imageBase64 = primaryImage.buffer.toString('base64');
+    const imageDataUrl = `data:${primaryImage.mimeType};base64,${imageBase64}`;
 
-    // Convert image to base64 for client-side visualization
-    const imageBase64 = buffer.toString('base64');
-    const imageDataUrl = `data:${image.type};base64,${imageBase64}`;
+    // Prepare images for multi-image analysis
+    const imageBuffers = images.map(img => ({
+      buffer: img.buffer,
+      mimeType: img.mimeType
+    }));
 
     // Run analysis (parallel execution for performance)
     const [roofAnalysisResult, solarPotentialResult] = await Promise.all([
-      analyzeRoofImageFromBuffer(buffer, image.type),
+      analyzeMultipleRoofImages(imageBuffers),
       getLocationSolarPotential(address),
     ]);
 
@@ -186,9 +210,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
         // AI metadata
         aiConfidence: roofAnalysisResult.aiConfidence,
         usedAI: roofAnalysisResult.usedAI,
+        imageCount: roofAnalysisResult.imageCount || images.length,
         usedRealGeocoding: solarPotentialResult.usedRealGeocoding,
         geocodedLocation: solarPotentialResult.geocodedLocation,
-        // Image for visualization
+        // Image for visualization (primary image)
         uploadedImageBase64: imageDataUrl,
         aiSummary,
       },
