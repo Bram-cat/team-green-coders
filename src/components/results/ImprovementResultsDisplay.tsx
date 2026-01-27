@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -5,6 +6,7 @@ import { RoofAnalysisResult, SolarPotentialResult } from '@/types/analysis';
 import { SolarCompaniesCard } from './SolarCompaniesCard';
 import { SavingsCalculator } from '@/components/calculators/SavingsCalculator';
 import { SeasonalProductionChart } from '@/components/charts/SeasonalProductionChart';
+import { exportToPDF } from '@/lib/utils/pdfExport';
 
 interface ImprovementResultsDisplayProps {
   currentInstallation: {
@@ -43,6 +45,8 @@ export function ImprovementResultsDisplay({
   uploadedImageBase64,
   aiConfidence,
 }: ImprovementResultsDisplayProps) {
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+
   const priorityColors = {
     high: 'bg-red-50 text-red-900 border-red-200 dark:bg-red-950/30 dark:text-red-200 dark:border-red-800',
     medium: 'bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-800',
@@ -58,6 +62,36 @@ export function ImprovementResultsDisplay({
   // Determine confidence level
   const isLowConfidence = aiConfidence && aiConfidence < 70;
   const isMediumConfidence = aiConfidence && aiConfidence >= 70 && aiConfidence < 85;
+
+  // Create a mock recommendation object for PDF export
+  const handleExportPDF = async () => {
+    setIsExportingPDF(true);
+    try {
+      // Convert improvement data to recommendation format for PDF
+      const mockRecommendation = {
+        suitabilityScore: currentInstallation.currentEfficiency,
+        systemSizeKW: currentInstallation.estimatedSystemSizeKW,
+        panelCount: currentInstallation.panelCount,
+        estimatedAnnualProductionKWh: currentInstallation.estimatedSystemSizeKW * 1174.9 + improvements.estimatedAdditionalProductionKWh,
+        explanation: `Your current system is operating at ${currentInstallation.currentEfficiency}% efficiency. With the recommended improvements, you could increase efficiency to ${improvements.potentialEfficiency}%, gaining an additional ${improvements.efficiencyGain.toFixed(1)}% efficiency.`,
+        layoutSuggestion: 'Existing installation with optimization opportunities',
+        suggestions: improvements.suggestions.map(s => s.description),
+        financials: undefined // Improvements don't have standard financials
+      };
+
+      await exportToPDF({
+        recommendation: mockRecommendation as any,
+        roofAnalysis,
+        solarPotential,
+        analysisType: 'improve'
+      });
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      alert('Failed to generate PDF report. Please try again.');
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -328,8 +362,21 @@ export function ImprovementResultsDisplay({
       />
 
       {/* Action Buttons */}
-      <div className="flex gap-4">
+      <div className="flex flex-col md:flex-row gap-4">
+        <Button
+          onClick={handleExportPDF}
+          disabled={isExportingPDF}
+          className="flex-1 bg-primary hover:bg-primary/90"
+        >
+          <svg className="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          {isExportingPDF ? 'Generating PDF...' : 'Download PDF Report'}
+        </Button>
         <Button onClick={onReset} variant="outline" className="flex-1">
+          <svg className="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
           Analyze Another Installation
         </Button>
       </div>
