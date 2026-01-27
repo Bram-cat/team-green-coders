@@ -145,10 +145,10 @@ export async function exportToPDF(options: PDFExportOptions): Promise<void> {
     yPosition += 10
 
     const financials = [
-      { label: 'Total System Cost', value: `$${recommendation.financials.totalSystemCost.toLocaleString()} CAD`, color: [239, 68, 68] },
-      { label: 'Monthly Savings', value: `$${recommendation.financials.monthlySavings.toFixed(0)}`, color: [34, 197, 94] },
-      { label: 'Annual Savings', value: `$${recommendation.financials.annualSavings.toFixed(0)}`, color: [34, 197, 94] },
-      { label: 'Payback Period', value: `${recommendation.financials.paybackYears.toFixed(1)} years`, color: [59, 130, 246] },
+      { label: 'Total System Cost', value: `$${recommendation.financials.estimatedSystemCost.toLocaleString()} CAD`, color: [239, 68, 68] },
+      { label: 'Monthly Savings', value: `$${recommendation.financials.monthlyAverageSavings.toFixed(0)}`, color: [34, 197, 94] },
+      { label: 'Annual Savings', value: `$${recommendation.financials.annualElectricitySavings.toFixed(0)}`, color: [34, 197, 94] },
+      { label: 'Payback Period', value: `${recommendation.financials.simplePaybackYears.toFixed(1)} years`, color: [59, 130, 246] },
       { label: '25-Year Savings', value: `$${recommendation.financials.twentyFiveYearSavings.toLocaleString()}`, color: [34, 197, 94] },
       { label: 'Net Profit (25 years)', value: `$${recommendation.financials.netProfit.toLocaleString()}`, color: [34, 197, 94] }
     ]
