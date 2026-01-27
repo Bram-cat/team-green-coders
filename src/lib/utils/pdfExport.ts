@@ -79,9 +79,9 @@ export async function exportToPDF(options: PDFExportOptions): Promise<void> {
   pdf.setFillColor(240, 240, 240)
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 20, 'F')
 
-  const scoreColor = recommendation.suitabilityScore >= 80 ? [34, 197, 94] :
+  const scoreColor: [number, number, number] = recommendation.suitabilityScore >= 80 ? [34, 197, 94] :
                      recommendation.suitabilityScore >= 60 ? [251, 191, 36] : [239, 68, 68]
-  pdf.setTextColor(...scoreColor)
+  pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2])
   pdf.setFontSize(32)
   pdf.setFont('helvetica', 'bold')
   pdf.text(`${recommendation.suitabilityScore}%`, margin + 10, yPosition + 14)
