@@ -147,7 +147,7 @@ const ROOF_ANALYSIS_PROMPT = `You are a strict solar installation auditor. Your 
 
 ${PEI_SOLAR_CONTEXT}
 
-TASK: Analyze this roof image for solar potential with ENHANCED ACCURACY.
+TASK: Analyze this roof image for solar potential with CONSERVATIVE, REALISTIC ESTIMATES.
 
 CRITICAL VALIDATION RULES:
 1. "isHouse" MUST BE FALSE IF:
@@ -171,15 +171,56 @@ CRITICAL VALIDATION RULES:
 
 ANALYSIS REQUIREMENTS (Only if isHouse is true):
 
-1. ROOF AREA CALCULATION:
-   - LOOK for reference objects (doors, windows, cars) to estimate dimensions.
-   - Calculate: Length (m) × Width (m) = Total Roof Area.
-   - Range: Bungalow (60-90m²), Average (90-140m²), Large (140-200m²).
+1. ROOF AREA CALCULATION (BE CONSERVATIVE AND REALISTIC):
+   ⚠️ CRITICAL: This is the #1 source of unrealistic estimates. BE CONSERVATIVE.
 
-2. OBSTACLES & USABLE AREA:
-   - DETECT skylights, chimneys, vents, and dormers.
-   - Fire code setback: Deduct 0.9m (3 ft) from all edges.
-   - Calculate usable % after ALL deductions.
+   REFERENCE OBJECTS FOR SCALE:
+   - Standard door: 2.0m tall × 0.9m wide
+   - Typical window: 1.2m wide × 1.5m tall
+   - Car (sedan): 4.5m long × 1.8m wide
+   - House width (PEI typical): 8-12m for bungalow, 10-15m for 2-story
+
+   REALISTIC PEI RESIDENTIAL ROOF AREAS:
+   - **Small bungalow: 60-80 m²** - Most common starter homes
+   - **Average 1.5-story: 80-110 m²** - Typical PEI family home
+   - **Large 2-story: 110-140 m²** - Bigger family homes
+   - **Very large/estate: 140-180 m²** - Rare, luxury homes
+
+   METHODOLOGY:
+   - Estimate VISIBLE roof sections only
+   - For angled/oblique photos: Reduce estimate by 20-30% to account for perspective
+   - For ground-level photos: You can only see ONE roof face - be very conservative
+   - Account for multiple roof planes: Complex roofs have wasted space
+   - IF UNCERTAIN: Always round DOWN. Better to underestimate than overestimate.
+
+   SANITY CHECK:
+   - If your estimate is >150 m², re-examine carefully - this is rare for PEI residential
+   - Compare your estimate to typical house footprint: 60-100 m² for most PEI homes
+   - Roof area is usually 1.2-1.5× footprint area (accounting for pitch and overhang)
+
+2. OBSTACLES & USABLE AREA (BE REALISTIC):
+   ⚠️ CRITICAL: Most roofs have 50-75% usable area, NOT 85-95%.
+
+   MANDATORY DEDUCTIONS:
+   - **Fire code setback: 0.9m (3 ft) from ALL roof edges** - This alone removes 20-30% of roof area
+   - **Chimneys, vents, skylights** - Typical home has 3-5 obstacles (each ~1-2 m²)
+   - **Dormers and roof valleys** - Complex geometry reduces usable space
+   - **North-facing sections** - Often unsuitable for solar (east/west possible but less ideal)
+   - **Maintenance walkways** - Required spacing between panel rows
+
+   REALISTIC USABLE PERCENTAGES:
+   - Simple south-facing roof, no obstacles: **70-80%** usable
+   - Average complexity, some obstacles: **60-75%** usable
+   - Complex multi-plane roof, multiple obstacles: **50-65%** usable
+   - Very complex or heavily shaded: **40-55%** usable
+
+   COMMON MISTAKES TO AVOID:
+   - Ignoring fire code setback (this is MANDATORY and substantial)
+   - Not accounting for north-facing roof sections (unsuitable for solar)
+   - Forgetting that only 50% of total roof area faces south/east/west
+   - Underestimating obstacle impact on panel layout
+
+   IF UNCERTAIN: Use 65% as default for average homes. This accounts for all typical deductions.
 
 3. SHADING ANALYSIS:
    - Detect tree or building shadows. LOW (<10%), MEDIUM (10-30%), HIGH (>30%).
@@ -206,23 +247,44 @@ ANALYSIS REQUIREMENTS (Only if isHouse is true):
 
 7. PANEL WATTAGE:
    - Standard: 350W panels (18% efficiency)
-   - Premium: 400W panels (21% efficiency)
+   - Premium: 400W panels (21% efficiency) - MOST COMMON
    - High-efficiency: 450W panels (23% efficiency)
+
+8. ESTIMATED PANEL COUNT (FINAL REALITY CHECK):
+   ⚠️ CRITICAL: This must align with your roof area and usable percentage estimates.
+
+   CALCULATION:
+   - Usable Roof Area (m²) = Total Roof Area × (Usable Percentage / 100)
+   - Each 400W panel needs ~5-6 m² of usable roof space (including spacing, walkways, setbacks)
+   - Estimated Panel Count = Usable Roof Area ÷ 5.5
+
+   REALISTIC PEI RESIDENTIAL RANGES:
+   - Small system (60-80 m² roof): **8-12 panels** (3.2-4.8 kW)
+   - Medium system (80-110 m² roof): **12-18 panels** (4.8-7.2 kW)
+   - Large system (110-140 m² roof): **18-24 panels** (7.2-9.6 kW)
+   - Very large system (140-180 m² roof): **24-30 panels** (9.6-12 kW)
+
+   **PEI MEDIAN: 18 panels (7.2 kW system)** - Use this as your baseline.
+
+   SANITY CHECKS:
+   - If you estimate >25 panels on a residential roof, you are probably OVERCOUNTING
+   - If panel count × 5.5 m² > usable roof area, REDUCE panel count
+   - Compare to PEI median (18 panels) - your estimate should be within ±50% unless roof is unusually small/large
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {
   "isHouse": <true|false (MANDATORY strict check)>,
   "hasExistingSolarPanels": <true|false (CRITICAL: check for existing panels)>,
   "existingPanelCount": <number (0 if none, otherwise count visible panels)>,
-  "roofAreaSqMeters": <number>,
-  "usableAreaPercentage": <number>,
+  "roofAreaSqMeters": <number (BE CONSERVATIVE: typical 60-140 m² for PEI residential)>,
+  "usableAreaPercentage": <number (BE REALISTIC: typical 55-75%, NOT 85-95%)>,
   "shadingLevel": "<low|medium|high>",
   "roofPitchDegrees": <number>,
   "complexity": "<simple|moderate|complex>",
   "orientation": "<north|south|east|west|flat>",
   "obstacles": [<string array>],
-  "confidence": <0-100>,
-  "estimatedPanelCount": <number>,
+  "confidence": <0-100 (REDUCE if image quality is poor or viewing angle is oblique)>,
+  "estimatedPanelCount": <number (SANITY CHECK: typical 12-24 panels, median 18 panels)>,
   "optimalTiltAngle": <number>,
   "effectiveTiltAngle": <number>,
   "tiltFactor": <0.85-1.05>,
