@@ -41,7 +41,7 @@ export default function PlanPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 py-8 px-4">
+        <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 dark:from-green-900 dark:via-green-800 dark:to-green-900 py-8 px-4">
             <div className={cn(
                 "mx-auto transition-all duration-700",
                 state === 'results' ? "max-w-7xl" : "max-w-2xl"
@@ -53,10 +53,10 @@ export default function PlanPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tighter animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                    <h1 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tighter animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                         Plan Your <span className="text-primary italic">Solar Future</span>
                     </h1>
-                    <p className="text-xl text-gray-600 max-w-lg mx-auto font-medium animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                    <p className="text-xl text-muted-foreground max-w-lg mx-auto font-medium animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                         Get personalized solar panel recommendations for your Prince Edward Island property.
                     </p>
                 </div>
@@ -64,7 +64,7 @@ export default function PlanPage() {
                 {/* Main Content */}
                 {state === 'form' && (
                     <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                        <Card className="border-none shadow-2xl rounded-[2rem] overflow-hidden">
+                        <Card className="border-none shadow-2xl rounded-[2rem] overflow-hidden bg-white dark:bg-green-800/30 dark:backdrop-blur-md">
                             <CardContent className="p-8 md:p-12">
                                 <AnalysisForm
                                     onSuccess={handleSuccess}
@@ -77,14 +77,14 @@ export default function PlanPage() {
                 )}
 
                 {state === 'loading' && (
-                    <Card className="text-center py-20 border-none shadow-2xl rounded-[2rem]">
+                    <Card className="text-center py-20 border-none shadow-2xl rounded-[2rem] bg-white dark:bg-green-800/30 dark:backdrop-blur-md">
                         <CardContent>
                             <div className="relative">
                                 <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150 animate-pulse" />
                                 <LoadingSpinner size="lg" className="relative z-10" />
                             </div>
-                            <p className="mt-10 text-2xl font-black text-gray-900 tracking-tight">Analyzing your roof...</p>
-                            <p className="mt-4 text-gray-500 font-medium max-w-sm mx-auto">
+                            <p className="mt-10 text-2xl font-black text-foreground tracking-tight">Analyzing your roof...</p>
+                            <p className="mt-4 text-muted-foreground font-medium max-w-sm mx-auto">
                                 Our AI is processing your architecture and calculating Prince Edward Island&apos;s irradiance data.
                             </p>
                         </CardContent>
@@ -109,15 +109,15 @@ export default function PlanPage() {
                 )}
 
                 {state === 'error' && (
-                    <Card className="text-center py-16 border-none shadow-2xl rounded-[2rem]">
+                    <Card className="text-center py-16 border-none shadow-2xl rounded-[2rem] bg-white dark:bg-green-800/30 dark:backdrop-blur-md">
                         <CardContent>
-                            <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100/50 rounded-full mb-6 text-red-600">
+                            <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100/50 dark:bg-red-900/30 rounded-full mb-6 text-red-600 dark:text-red-400">
                                 <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
                             </div>
-                            <h2 className="text-2xl font-black text-gray-900 mb-4 tracking-tight">Analysis Failed</h2>
-                            <p className="text-gray-600 mb-8 max-w-sm mx-auto font-medium leading-relaxed">{error}</p>
+                            <h2 className="text-2xl font-black text-foreground mb-4 tracking-tight">Analysis Failed</h2>
+                            <p className="text-muted-foreground mb-8 max-w-sm mx-auto font-medium leading-relaxed">{error}</p>
                             <Button onClick={handleReset} className="rounded-xl h-12 px-8 font-bold">
                                 Try Again
                             </Button>

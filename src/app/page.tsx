@@ -454,8 +454,7 @@ export default function HomePage() {
             <div className="space-y-4">
               <h3 className="text-2xl font-bold text-primary">Green Coders</h3>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Built for the PEI Hackathon. This project represents our
-                commitment to leveraging AI for environmental sustainability.
+                Developed by local PEI developers
               </p>
               <div className="pt-6">
                 <div className="inline-flex flex-col items-center">
