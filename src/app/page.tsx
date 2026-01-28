@@ -299,10 +299,13 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-muted/40 border-t border-border">
+      <footer className="py-12 bg-muted/40 dark:bg-muted/20 border-t border-border dark:border-border/50">
         <div className="container px-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Green Coders. All rights reserved. Credit to Ram.
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground/90 font-medium">
+            © {new Date().getFullYear()} SolarPEI. All rights reserved.
+          </p>
+          <p className="text-xs text-muted-foreground/70 dark:text-muted-foreground/60 mt-2">
+            Built by local PEI developers 🍁
           </p>
         </div>
       </footer>

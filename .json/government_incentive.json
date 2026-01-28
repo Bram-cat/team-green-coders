@@ -1,0 +1,53 @@
+[
+  {
+    "id": "pei-grebate-001",
+    "name": "PEI Home Energy Efficiency Loan Program",
+    "type": "Loan",
+    "available": true,
+    "max_amount": 10000,
+    "description": "Interest-free loans for energy efficiency upgrades including solar PV installations",
+    "eligibility_1": "PEI homeowner",
+    "eligibility_2": "Primary residence",
+    "eligibility_3": "Must complete energy assessment",
+    "application_url": "https://www.princeedwardisland.ca/en/service/apply-for-energy-efficiency-loan",
+    "deadline": "Ongoing",
+    "requires_pre_approval": true,
+    "processing_weeks": 4,
+    "contact_phone": "1-877-734-6336",
+    "contact_email": "energy@gov.pe.ca"
+  },
+  {
+    "id": "fed-grebate-002",
+    "name": "Canada Greener Homes Grant",
+    "type": "Grant",
+    "available": true,
+    "max_amount": 5000,
+    "description": "Federal grant for home energy retrofits including solar panel installation",
+    "eligibility_1": "Canadian homeowner",
+    "eligibility_2": "Primary residence",
+    "eligibility_3": "Pre-and-post retrofit EnerGuide evaluation required",
+    "application_url": "https://natural-resources.canada.ca/energy-efficiency/homes/canada-greener-homes-grant",
+    "deadline": "2027-03-31",
+    "requires_pre_approval": true,
+    "processing_weeks": 12,
+    "contact_phone": "1-833-674-8282",
+    "contact_email": "greenerhomesgrant-subventionsmaisonsvertes@nrcan-rncan.gc.ca"
+  },
+  {
+    "id": "fed-loan-003",
+    "name": "Canada Greener Homes Loan",
+    "type": "Interest-Free Loan",
+    "available": true,
+    "max_amount": 40000,
+    "description": "Interest-free loan of up to $40,000 for home energy improvements",
+    "eligibility_1": "Approved for Greener Homes Grant",
+    "eligibility_2": "Canadian homeowner",
+    "eligibility_3": "Good credit history",
+    "application_url": "https://natural-resources.canada.ca/energy-efficiency/homes/canada-greener-homes-loan",
+    "deadline": "2027-03-31",
+    "requires_pre_approval": true,
+    "processing_weeks": 8,
+    "contact_phone": "1-866-292-9517",
+    "contact_email": "greenerhomesloan-pretsmaisonsvertes@nrcan-rncan.gc.ca"
+  }
+]

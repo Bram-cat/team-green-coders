@@ -68,6 +68,33 @@ export default function HistoryPage() {
         setExpandedId(expandedId === id ? null : id);
     };
 
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card expansion
+
+        if (!confirm('Are you sure you want to delete this analysis? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('analysis_history')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                console.error('Delete error:', error);
+                alert('Failed to delete analysis. Please try again.');
+                return;
+            }
+
+            // Remove from local state
+            setHistory(prev => prev.filter(item => item.id !== id));
+        } catch (err) {
+            console.error('Error deleting:', err);
+            alert('An unexpected error occurred.');
+        }
+    };
+
     if (!isLoaded || loading) {
         return (
             <div className="container py-24 flex justify-center min-h-[50vh] items-center">
@@ -291,6 +318,16 @@ export default function HistoryPage() {
                                                         </div>
                                                         <Button className="w-full rounded-2xl h-14 font-black shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all active:scale-95" variant="default" asChild onClick={(e) => e.stopPropagation()}>
                                                             <Link href={`/features/${item.analysis_type}`}>Re-evaluate Property</Link>
+                                                        </Button>
+                                                        <Button
+                                                            className="w-full rounded-2xl h-14 font-black shadow-lg hover:shadow-destructive/20 transition-all active:scale-95"
+                                                            variant="destructive"
+                                                            onClick={(e) => handleDelete(item.id, e)}
+                                                        >
+                                                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                            Delete Analysis
                                                         </Button>
                                                         <p className="text-[9px] text-center text-muted-foreground font-bold uppercase tracking-widest opacity-60 italic">Securely stored in Green Coders Cloud</p>
                                                     </div>
