@@ -6,13 +6,13 @@
  * - Financial summary generation (AI Key #2)
  */
 
-import OpenAI from 'openai';
-import { RoofAnalysisResult, ShadingLevel } from '@/types/analysis';
-import { FinancialAnalysis } from '@/lib/calculations/financialCalculations';
+import OpenAI from "openai";
+import { RoofAnalysisResult, ShadingLevel } from "@/types/analysis";
+import { FinancialAnalysis } from "@/lib/calculations/financialCalculations";
 import {
   calculateTiltFactor as calcTiltFactor,
-  calculateSnowLossFactor
-} from '@/lib/data/peiSolarData';
+  calculateSnowLossFactor,
+} from "@/lib/data/peiSolarData";
 
 // Initialize OpenAI clients
 const openai1 = process.env.OPENAI_IMAGE_API_KEY_1
@@ -24,8 +24,8 @@ const openai2 = process.env.OPENAI_IMAGE_API_KEY_2
   : null;
 
 // Model names
-const VISION_MODELS = ['gpt-4o', 'gpt-4o-mini'];
-const TEXT_MODELS = ['gpt-4o-mini'];
+const VISION_MODELS = ["gpt-4o", "gpt-4o-mini"];
+const TEXT_MODELS = ["gpt-4o"];
 
 // Retry configuration
 const MAX_RETRIES = 3;
@@ -42,10 +42,10 @@ export interface AIRoofAnalysis {
   existingPanelCount?: number; // NEW: Count of existing panels if any
   roofAreaSqMeters: number;
   usableAreaPercentage: number;
-  shadingLevel: 'low' | 'medium' | 'high';
+  shadingLevel: "low" | "medium" | "high";
   roofPitchDegrees: number;
-  complexity: 'simple' | 'moderate' | 'complex';
-  orientation: 'north' | 'south' | 'east' | 'west' | 'flat';
+  complexity: "simple" | "moderate" | "complex";
+  orientation: "north" | "south" | "east" | "west" | "flat";
   obstacles: string[];
   confidence: number;
   estimatedPanelCount: number;
@@ -55,7 +55,7 @@ export interface AIRoofAnalysis {
   tiltFactor: number;
   snowLossFactor: number;
   recommendedPanelEfficiency: number;
-  panelType: 'standard' | 'premium' | 'high-efficiency';
+  panelType: "standard" | "premium" | "high-efficiency";
   recommendedPanelWattage: number;
 }
 
@@ -236,7 +236,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
  * Delay helper for retries
  */
 function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 const HOUSE_VERIFICATION_PROMPT = `As a strict Architectural Sentry, your ONLY job is to determine if this image is a REAL house/building suitable for solar panel analysis.
@@ -261,75 +261,91 @@ RETURN ONLY VALID JSON:
 async function verifyIsHouse(
   client: OpenAI,
   base64Image: string,
-  mimeType: string
-): Promise<{ status: 'VALID' | 'INVALID'; reason: string }> {
+  mimeType: string,
+): Promise<{ status: "VALID" | "INVALID"; reason: string }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 12000);
 
   try {
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an Architectural Sentry AI specializing in image validation for solar panel analysis.'
-        },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: HOUSE_VERIFICATION_PROMPT },
-            {
-              type: 'image_url',
-              image_url: { url: `data:${mimeType};base64,${base64Image}` }
-            }
-          ]
-        }
-      ],
-      response_format: { type: 'json_object' },
-      max_tokens: 300
-    }, { signal: controller.signal });
+    const response = await client.chat.completions.create(
+      {
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an Architectural Sentry AI specializing in image validation for solar panel analysis.",
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: HOUSE_VERIFICATION_PROMPT },
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${base64Image}` },
+              },
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 300,
+      },
+      { signal: controller.signal },
+    );
 
     clearTimeout(timeoutId);
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
-      throw new Error('Empty response from OpenAI');
+      throw new Error("Empty response from OpenAI");
     }
 
     const parsed = JSON.parse(content);
     console.log(`[AI Sentry] Result: ${parsed.status} - ${parsed.reason}`);
 
     return {
-      status: parsed.status === 'VALID' ? 'VALID' : 'INVALID',
-      reason: parsed.reason || 'Architectural integrity check failed.'
+      status: parsed.status === "VALID" ? "VALID" : "INVALID",
+      reason: parsed.reason || "Architectural integrity check failed.",
     };
   } catch (error: any) {
     clearTimeout(timeoutId);
-    console.error('[AI Sentry] Error:', error);
+    console.error("[AI Sentry] Error:", error);
 
     // Fallback to gpt-4o-mini on error
     try {
       const fallbackResponse = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: "gpt-4o-mini",
         messages: [
-          { role: 'user', content: [
-            { type: 'text', text: HOUSE_VERIFICATION_PROMPT },
-            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` }}
-          ]}
+          {
+            role: "user",
+            content: [
+              { type: "text", text: HOUSE_VERIFICATION_PROMPT },
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${base64Image}` },
+              },
+            ],
+          },
         ],
-        response_format: { type: 'json_object' },
-        max_tokens: 300
+        response_format: { type: "json_object" },
+        max_tokens: 300,
       });
 
-      const parsed = JSON.parse(fallbackResponse.choices[0]?.message?.content || '{}');
-      return { status: parsed.status === 'VALID' ? 'VALID' : 'INVALID', reason: parsed.reason };
+      const parsed = JSON.parse(
+        fallbackResponse.choices[0]?.message?.content || "{}",
+      );
+      return {
+        status: parsed.status === "VALID" ? "VALID" : "INVALID",
+        reason: parsed.reason,
+      };
     } catch (inner) {
-      console.error('[AI Sentry] Fallback failed');
+      console.error("[AI Sentry] Fallback failed");
     }
 
     return {
-      status: 'INVALID',
-      reason: 'The image provided is not a house. Please upload a clear photo of a residential or commercial building with a visible roof.'
+      status: "INVALID",
+      reason:
+        "The image provided is not a house. Please upload a clear photo of a residential or commercial building with a visible roof.",
     };
   }
 }
@@ -341,11 +357,11 @@ async function tryAnalyzeWithModel(
   client: OpenAI,
   modelName: string,
   base64Image: string,
-  mimeType: string
+  mimeType: string,
 ): Promise<AIAnalysisResult> {
   // PRE-VALIDATION STEP
   const sentryResult = await verifyIsHouse(client, base64Image, mimeType);
-  if (sentryResult.status !== 'VALID') {
+  if (sentryResult.status !== "VALID") {
     return {
       success: false,
       error: `The image provided is not a house. Please upload a clear photo of a residential or commercial building with a visible roof. (${sentryResult.reason})`,
@@ -356,33 +372,37 @@ async function tryAnalyzeWithModel(
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await client.chat.completions.create({
-      model: modelName,
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a strict solar installation auditor for Prince Edward Island, Canada.'
-        },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: ROOF_ANALYSIS_PROMPT },
-            {
-              type: 'image_url',
-              image_url: { url: `data:${mimeType};base64,${base64Image}` }
-            }
-          ]
-        }
-      ],
-      response_format: { type: 'json_object' },
-      max_tokens: 1000
-    }, { signal: controller.signal });
+    const response = await client.chat.completions.create(
+      {
+        model: modelName,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a strict solar installation auditor for Prince Edward Island, Canada.",
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: ROOF_ANALYSIS_PROMPT },
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${base64Image}` },
+              },
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 1000,
+      },
+      { signal: controller.signal },
+    );
 
     clearTimeout(timeoutId);
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
-      return { success: false, error: 'Empty response from OpenAI' };
+      return { success: false, error: "Empty response from OpenAI" };
     }
 
     const parsed: AIRoofAnalysis = JSON.parse(content);
@@ -391,7 +411,8 @@ async function tryAnalyzeWithModel(
     if (parsed.confidence < 30) {
       return {
         success: false,
-        error: 'Visual Clarity Error: The image quality or visibility is too low for accurate analysis. Please provide a clearer photo.',
+        error:
+          "Visual Clarity Error: The image quality or visibility is too low for accurate analysis. Please provide a clearer photo.",
       };
     }
 
@@ -412,23 +433,46 @@ async function tryAnalyzeWithModel(
       isHouse: true,
       hasExistingSolarPanels,
       existingPanelCount,
-      roofAreaSqMeters: Math.max(50, Math.min(300, parsed.roofAreaSqMeters || 100)),
-      usableAreaPercentage: Math.max(30, Math.min(95, parsed.usableAreaPercentage || 70)),
+      roofAreaSqMeters: Math.max(
+        50,
+        Math.min(300, parsed.roofAreaSqMeters || 100),
+      ),
+      usableAreaPercentage: Math.max(
+        30,
+        Math.min(95, parsed.usableAreaPercentage || 70),
+      ),
       shadingLevel: validateShadingLevel(parsed.shadingLevel),
-      roofPitchDegrees: Math.max(5, Math.min(60, parsed.roofPitchDegrees || 30)),
+      roofPitchDegrees: Math.max(
+        5,
+        Math.min(60, parsed.roofPitchDegrees || 30),
+      ),
       complexity: validateComplexity(parsed.complexity),
       orientation: validateOrientation(parsed.orientation),
       obstacles: Array.isArray(parsed.obstacles) ? parsed.obstacles : [],
       confidence: Math.max(0, Math.min(100, parsed.confidence || 50)),
-      estimatedPanelCount: Math.max(5, Math.min(50, parsed.estimatedPanelCount || 18)),
-      optimalTiltAngle: Math.max(20, Math.min(60, parsed.optimalTiltAngle || 44)),
+      estimatedPanelCount: Math.max(
+        5,
+        Math.min(50, parsed.estimatedPanelCount || 18),
+      ),
+      optimalTiltAngle: Math.max(
+        20,
+        Math.min(60, parsed.optimalTiltAngle || 44),
+      ),
 
       // Accuracy enhancements with fallback calculations
-      effectiveTiltAngle: parsed.effectiveTiltAngle || parsed.roofPitchDegrees || 44,
-      tiltFactor: parsed.tiltFactor || calcTiltFactor(parsed.roofPitchDegrees || 30, parsed.orientation || 'south'),
-      snowLossFactor: parsed.snowLossFactor || calculateSnowLossFactor(parsed.roofPitchDegrees || 30),
+      effectiveTiltAngle:
+        parsed.effectiveTiltAngle || parsed.roofPitchDegrees || 44,
+      tiltFactor:
+        parsed.tiltFactor ||
+        calcTiltFactor(
+          parsed.roofPitchDegrees || 30,
+          parsed.orientation || "south",
+        ),
+      snowLossFactor:
+        parsed.snowLossFactor ||
+        calculateSnowLossFactor(parsed.roofPitchDegrees || 30),
       recommendedPanelEfficiency: parsed.recommendedPanelEfficiency || 0.21,
-      panelType: parsed.panelType || 'premium',
+      panelType: parsed.panelType || "premium",
       recommendedPanelWattage: parsed.recommendedPanelWattage || 400,
     };
 
@@ -448,38 +492,50 @@ async function tryAnalyzeWithModel(
  */
 export async function analyzeRoofWithAI(
   imageBuffer: Buffer,
-  mimeType: string = 'image/jpeg'
+  mimeType: string = "image/jpeg",
 ): Promise<AIAnalysisResult> {
   if (!openai1) {
     return {
       success: false,
-      error: 'OpenAI API key not configured (OPENAI_IMAGE_API_KEY_1)',
+      error: "OpenAI API key not configured (OPENAI_IMAGE_API_KEY_1)",
     };
   }
 
-  const base64Image = imageBuffer.toString('base64');
-  let lastError = '';
+  const base64Image = imageBuffer.toString("base64");
+  let lastError = "";
 
   // Try each model with retries
   for (const modelName of VISION_MODELS) {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        console.log(`[AI #1] Attempting roof analysis with ${modelName} (attempt ${attempt}/${MAX_RETRIES})`);
+        console.log(
+          `[AI #1] Attempting roof analysis with ${modelName} (attempt ${attempt}/${MAX_RETRIES})`,
+        );
 
-        const result = await tryAnalyzeWithModel(openai1, modelName, base64Image, mimeType);
+        const result = await tryAnalyzeWithModel(
+          openai1,
+          modelName,
+          base64Image,
+          mimeType,
+        );
 
         if (result.success) {
-          console.log(`[AI #1] Success with model ${modelName}, confidence: ${result.data.confidence}%`);
+          console.log(
+            `[AI #1] Success with model ${modelName}, confidence: ${result.data.confidence}%`,
+          );
           return result;
         }
 
         lastError = result.error;
       } catch (error) {
-        lastError = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`[AI #1] ${modelName} attempt ${attempt} failed:`, lastError);
+        lastError = error instanceof Error ? error.message : "Unknown error";
+        console.error(
+          `[AI #1] ${modelName} attempt ${attempt} failed:`,
+          lastError,
+        );
 
         // If rate limited, try next model immediately
-        if (lastError.includes('429') || lastError.includes('rate')) {
+        if (lastError.includes("429") || lastError.includes("rate")) {
           console.log(`[AI #1] Rate limited, trying next model...`);
           break;
         }
@@ -506,7 +562,7 @@ const FINANCIAL_SUMMARY_PROMPT_TEMPLATE = (
   roofData: RoofAnalysisResult,
   financials: FinancialAnalysis,
   systemSizeKW: number,
-  coordinates: { lat: number; lon: number }
+  coordinates: { lat: number; lon: number },
 ) => `You are a friendly, knowledgeable solar energy advisor specializing in Prince Edward Island, Canada.
 
 ${PEI_SOLAR_CONTEXT}
@@ -517,9 +573,9 @@ PROPERTY LOCATION:
 
 ROOF ANALYSIS RESULTS:
 - Total roof area: ${roofData.roofAreaSqMeters} m²
-- Usable area: ${roofData.usableAreaPercentage}% (${Math.round(roofData.roofAreaSqMeters * roofData.usableAreaPercentage / 100)} m²)
+- Usable area: ${roofData.usableAreaPercentage}% (${Math.round((roofData.roofAreaSqMeters * roofData.usableAreaPercentage) / 100)} m²)
 - Shading level: ${roofData.shadingLevel}
-- Roof pitch: ${roofData.roofPitchDegrees}° ${roofData.roofPitchDegrees >= 40 && roofData.roofPitchDegrees <= 48 ? '(excellent for PEI!)' : ''}
+- Roof pitch: ${roofData.roofPitchDegrees}° ${roofData.roofPitchDegrees >= 40 && roofData.roofPitchDegrees <= 48 ? "(excellent for PEI!)" : ""}
 - Complexity: ${roofData.complexity}
 
 RECOMMENDED SOLAR SYSTEM:
@@ -554,27 +610,31 @@ Keep it under 120 words. Structure it as a compelling argument for going solar n
 async function tryGenerateSummaryWithModel(
   client: OpenAI,
   modelName: string,
-  prompt: string
+  prompt: string,
 ): Promise<string | null> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await client.chat.completions.create({
-      model: modelName,
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a friendly, knowledgeable solar energy advisor specializing in Prince Edward Island, Canada.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      max_tokens: 300,
-      temperature: 0.7
-    }, { signal: controller.signal });
+    const response = await client.chat.completions.create(
+      {
+        model: modelName,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a friendly, knowledgeable solar energy advisor specializing in Prince Edward Island, Canada.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        max_tokens: 300,
+        temperature: 0.7,
+      },
+      { signal: controller.signal },
+    );
 
     clearTimeout(timeoutId);
 
@@ -598,29 +658,43 @@ export async function generateFinancialSummary(
   financials: FinancialAnalysis,
   roofData: RoofAnalysisResult,
   systemSizeKW: number,
-  coordinates: { lat: number; lon: number } = { lat: 46.25, lon: -63.13 }
+  coordinates: { lat: number; lon: number } = { lat: 46.25, lon: -63.13 },
 ): Promise<string> {
   if (!openai2) {
     return generateTemplateSummary(financials, roofData, systemSizeKW);
   }
 
-  const prompt = FINANCIAL_SUMMARY_PROMPT_TEMPLATE(roofData, financials, systemSizeKW, coordinates);
-  let lastError = '';
+  const prompt = FINANCIAL_SUMMARY_PROMPT_TEMPLATE(
+    roofData,
+    financials,
+    systemSizeKW,
+    coordinates,
+  );
+  let lastError = "";
 
   for (const modelName of TEXT_MODELS) {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        console.log(`[AI #2] Attempting summary with ${modelName} (attempt ${attempt}/${MAX_RETRIES})`);
+        console.log(
+          `[AI #2] Attempting summary with ${modelName} (attempt ${attempt}/${MAX_RETRIES})`,
+        );
 
-        const summary = await tryGenerateSummaryWithModel(openai2, modelName, prompt);
+        const summary = await tryGenerateSummaryWithModel(
+          openai2,
+          modelName,
+          prompt,
+        );
 
         if (summary) {
           console.log(`[AI #2] Summary generated with ${modelName}`);
           return summary;
         }
       } catch (error) {
-        lastError = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`[AI #2] ${modelName} summary attempt ${attempt} failed:`, lastError);
+        lastError = error instanceof Error ? error.message : "Unknown error";
+        console.error(
+          `[AI #2] ${modelName} summary attempt ${attempt} failed:`,
+          lastError,
+        );
 
         if (attempt < MAX_RETRIES) {
           await delay(RETRY_DELAY_MS);
@@ -629,7 +703,7 @@ export async function generateFinancialSummary(
     }
   }
 
-  console.log('[AI #2] All summary attempts failed, using template');
+  console.log("[AI #2] All summary attempts failed, using template");
   return generateTemplateSummary(financials, roofData, systemSizeKW);
 }
 
@@ -801,15 +875,15 @@ export interface AIExistingPanelsAnalysis {
   panelCondition: string;
   roofAreaSqMeters: number;
   usableAreaPercentage: number;
-  shadingLevel: 'low' | 'medium' | 'high';
+  shadingLevel: "low" | "medium" | "high";
   roofPitchDegrees: number;
-  complexity: 'simple' | 'moderate' | 'complex';
+  complexity: "simple" | "moderate" | "complex";
   estimatedAdditionalProduction: number;
   suggestions: Array<{
     type: string;
     title: string;
     description: string;
-    priority: 'high' | 'medium' | 'low';
+    priority: "high" | "medium" | "low";
     estimatedEfficiencyGain: number;
     estimatedCost?: number;
   }>;
@@ -824,11 +898,11 @@ async function tryAnalyzeExistingPanelsWithModel(
   client: OpenAI,
   modelName: string,
   base64Image: string,
-  mimeType: string
+  mimeType: string,
 ): Promise<AIExistingPanelsResult> {
   // PRE-VALIDATION STEP
   const sentryResult = await verifyIsHouse(client, base64Image, mimeType);
-  if (sentryResult.status !== 'VALID') {
+  if (sentryResult.status !== "VALID") {
     return {
       success: false,
       error: `The image provided is not a house. Please upload a clear photo of a residential or commercial building with a visible roof. (${sentryResult.reason})`,
@@ -839,42 +913,51 @@ async function tryAnalyzeExistingPanelsWithModel(
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await client.chat.completions.create({
-      model: modelName,
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a strict solar installation auditor for Prince Edward Island, Canada.'
-        },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: EXISTING_PANELS_ANALYSIS_PROMPT },
-            {
-              type: 'image_url',
-              image_url: { url: `data:${mimeType};base64,${base64Image}` }
-            }
-          ]
-        }
-      ],
-      response_format: { type: 'json_object' },
-      max_tokens: 1000
-    }, { signal: controller.signal });
+    const response = await client.chat.completions.create(
+      {
+        model: modelName,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a strict solar installation auditor for Prince Edward Island, Canada.",
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: EXISTING_PANELS_ANALYSIS_PROMPT },
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${base64Image}` },
+              },
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 1000,
+      },
+      { signal: controller.signal },
+    );
 
     clearTimeout(timeoutId);
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
-      return { success: false, error: 'Empty response from OpenAI' };
+      return { success: false, error: "Empty response from OpenAI" };
     }
 
     const parsed = JSON.parse(content);
 
     // Check if AI detected no solar panels
-    if (parsed.isHouse === false || parsed.currentPanelCount === 0 || !parsed.currentPanelCount) {
+    if (
+      parsed.isHouse === false ||
+      parsed.currentPanelCount === 0 ||
+      !parsed.currentPanelCount
+    ) {
       return {
         success: false,
-        error: 'No solar panels detected in this image. The Improve feature is for analyzing existing solar installations. If you want to plan a new solar installation, please use the "Plan" feature instead.',
+        error:
+          'No solar panels detected in this image. The Improve feature is for analyzing existing solar installations. If you want to plan a new solar installation, please use the "Plan" feature instead.',
       };
     }
 
@@ -884,11 +967,15 @@ async function tryAnalyzeExistingPanelsWithModel(
 
     // Residential installations rarely exceed 35 panels (14 kW)
     if (rawPanelCount > 35) {
-      console.warn(`[AI WARNING] Unusually high panel count detected: ${rawPanelCount}. Possible overcounting.`);
+      console.warn(
+        `[AI WARNING] Unusually high panel count detected: ${rawPanelCount}. Possible overcounting.`,
+      );
 
       // If confidence is also high but count seems wrong, reduce confidence
       if (confidence > 70) {
-        console.warn(`[AI WARNING] Reducing confidence from ${confidence}% to 55% due to suspicious panel count.`);
+        console.warn(
+          `[AI WARNING] Reducing confidence from ${confidence}% to 55% due to suspicious panel count.`,
+        );
         parsed.confidence = 55;
       }
     }
@@ -900,7 +987,9 @@ async function tryAnalyzeExistingPanelsWithModel(
 
       // Theoretical max: ~0.6 panels per m² (1.7m² per panel + spacing)
       if (panelsPerSqM > 0.6) {
-        console.warn(`[AI VALIDATION FAILED] Panel density (${panelsPerSqM.toFixed(2)} panels/m²) exceeds physical limits. Capping count.`);
+        console.warn(
+          `[AI VALIDATION FAILED] Panel density (${panelsPerSqM.toFixed(2)} panels/m²) exceeds physical limits. Capping count.`,
+        );
         parsed.currentPanelCount = Math.floor(roofArea * 0.5); // Conservative cap
         parsed.confidence = Math.min(parsed.confidence || 50, 50); // Lower confidence
       }
@@ -908,32 +997,58 @@ async function tryAnalyzeExistingPanelsWithModel(
 
     // Validate and sanitize with more conservative caps
     const sanitized: AIExistingPanelsAnalysis = {
-      currentPanelCount: Math.max(5, Math.min(50, parsed.currentPanelCount || 12)), // Cap at 50 (was 100)
-      estimatedSystemSizeKW: Math.max(2, Math.min(20, parsed.estimatedSystemSizeKW || 4.8)), // Cap at 20kW (was 50)
-      currentEfficiency: Math.max(0, Math.min(100, parsed.currentEfficiency || 70)),
-      potentialEfficiency: Math.max(0, Math.min(100, parsed.potentialEfficiency || 85)),
-      orientation: parsed.orientation || 'South',
-      panelCondition: parsed.panelCondition || 'Fair',
-      roofAreaSqMeters: Math.max(50, Math.min(300, parsed.roofAreaSqMeters || 100)),
-      usableAreaPercentage: Math.max(30, Math.min(95, parsed.usableAreaPercentage || 70)),
+      currentPanelCount: Math.max(
+        5,
+        Math.min(50, parsed.currentPanelCount || 12),
+      ), // Cap at 50 (was 100)
+      estimatedSystemSizeKW: Math.max(
+        2,
+        Math.min(20, parsed.estimatedSystemSizeKW || 4.8),
+      ), // Cap at 20kW (was 50)
+      currentEfficiency: Math.max(
+        0,
+        Math.min(100, parsed.currentEfficiency || 70),
+      ),
+      potentialEfficiency: Math.max(
+        0,
+        Math.min(100, parsed.potentialEfficiency || 85),
+      ),
+      orientation: parsed.orientation || "South",
+      panelCondition: parsed.panelCondition || "Fair",
+      roofAreaSqMeters: Math.max(
+        50,
+        Math.min(300, parsed.roofAreaSqMeters || 100),
+      ),
+      usableAreaPercentage: Math.max(
+        30,
+        Math.min(95, parsed.usableAreaPercentage || 70),
+      ),
       shadingLevel: validateShadingLevel(parsed.shadingLevel),
-      roofPitchDegrees: Math.max(5, Math.min(60, parsed.roofPitchDegrees || 30)),
+      roofPitchDegrees: Math.max(
+        5,
+        Math.min(60, parsed.roofPitchDegrees || 30),
+      ),
       complexity: validateComplexity(parsed.complexity),
-      estimatedAdditionalProduction: Math.max(0, parsed.estimatedAdditionalProduction || 500),
+      estimatedAdditionalProduction: Math.max(
+        0,
+        parsed.estimatedAdditionalProduction || 500,
+      ),
       suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
       confidence: Math.max(0, Math.min(100, parsed.confidence || 50)),
     };
 
     // Final sanity check: If confidence < 60%, add a warning suggestion
     if (sanitized.confidence < 60) {
-      console.log(`[AI NOTICE] Low confidence (${sanitized.confidence}%). Adding image quality warning to suggestions.`);
+      console.log(
+        `[AI NOTICE] Low confidence (${sanitized.confidence}%). Adding image quality warning to suggestions.`,
+      );
 
       // Add low confidence warning as first suggestion
       sanitized.suggestions.unshift({
-        type: 'image_quality',
-        title: 'Consider Re-uploading Clearer Image',
+        type: "image_quality",
+        title: "Consider Re-uploading Clearer Image",
         description: `Our AI analysis has ${sanitized.confidence}% confidence in these estimates due to image quality, viewing angle, or visibility. For more accurate results, try uploading: (1) A closer, higher-resolution photo, (2) An aerial or rooftop photo showing panels clearly, (3) Multiple images from different angles.`,
-        priority: 'high',
+        priority: "high",
         estimatedEfficiencyGain: 0,
         estimatedCost: 0,
       });
@@ -951,36 +1066,48 @@ async function tryAnalyzeExistingPanelsWithModel(
  */
 export async function analyzeExistingPanelsWithAI(
   imageBuffer: Buffer,
-  mimeType: string = 'image/jpeg'
+  mimeType: string = "image/jpeg",
 ): Promise<AIExistingPanelsResult> {
   if (!openai1) {
     return {
       success: false,
-      error: 'OpenAI API key not configured (OPENAI_IMAGE_API_KEY_1)',
+      error: "OpenAI API key not configured (OPENAI_IMAGE_API_KEY_1)",
     };
   }
 
-  const base64Image = imageBuffer.toString('base64');
-  let lastError = '';
+  const base64Image = imageBuffer.toString("base64");
+  let lastError = "";
 
   for (const modelName of VISION_MODELS) {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        console.log(`[AI #1] Attempting existing panels analysis with ${modelName} (attempt ${attempt}/${MAX_RETRIES})`);
+        console.log(
+          `[AI #1] Attempting existing panels analysis with ${modelName} (attempt ${attempt}/${MAX_RETRIES})`,
+        );
 
-        const result = await tryAnalyzeExistingPanelsWithModel(openai1, modelName, base64Image, mimeType);
+        const result = await tryAnalyzeExistingPanelsWithModel(
+          openai1,
+          modelName,
+          base64Image,
+          mimeType,
+        );
 
         if (result.success) {
-          console.log(`[AI #1] Existing panels analysis success with ${modelName}`);
+          console.log(
+            `[AI #1] Existing panels analysis success with ${modelName}`,
+          );
           return result;
         }
 
         lastError = result.error;
       } catch (error) {
-        lastError = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`[AI #1] ${modelName} attempt ${attempt} failed:`, lastError);
+        lastError = error instanceof Error ? error.message : "Unknown error";
+        console.error(
+          `[AI #1] ${modelName} attempt ${attempt} failed:`,
+          lastError,
+        );
 
-        if (lastError.includes('429') || lastError.includes('rate')) {
+        if (lastError.includes("429") || lastError.includes("rate")) {
           console.log(`[AI #1] Rate limited, trying next model...`);
           break;
         }
@@ -1003,32 +1130,50 @@ export async function analyzeExistingPanelsWithAI(
 // ============================================
 
 function validateShadingLevel(level: string): ShadingLevel {
-  const valid: ShadingLevel[] = ['low', 'medium', 'high'];
-  return valid.includes(level as ShadingLevel) ? (level as ShadingLevel) : 'medium';
+  const valid: ShadingLevel[] = ["low", "medium", "high"];
+  return valid.includes(level as ShadingLevel)
+    ? (level as ShadingLevel)
+    : "medium";
 }
 
-function validateComplexity(complexity: string): 'simple' | 'moderate' | 'complex' {
-  const valid = ['simple', 'moderate', 'complex'];
-  return valid.includes(complexity) ? (complexity as 'simple' | 'moderate' | 'complex') : 'moderate';
+function validateComplexity(
+  complexity: string,
+): "simple" | "moderate" | "complex" {
+  const valid = ["simple", "moderate", "complex"];
+  return valid.includes(complexity)
+    ? (complexity as "simple" | "moderate" | "complex")
+    : "moderate";
 }
 
-function validateOrientation(orientation: string): 'north' | 'south' | 'east' | 'west' | 'flat' {
-  const valid = ['north', 'south', 'east', 'west', 'flat'];
-  return valid.includes(orientation) ? (orientation as 'north' | 'south' | 'east' | 'west' | 'flat') : 'south';
+function validateOrientation(
+  orientation: string,
+): "north" | "south" | "east" | "west" | "flat" {
+  const valid = ["north", "south", "east", "west", "flat"];
+  return valid.includes(orientation)
+    ? (orientation as "north" | "south" | "east" | "west" | "flat")
+    : "south";
 }
 
 function generateTemplateSummary(
   financials: FinancialAnalysis,
   roofData: RoofAnalysisResult,
-  systemSizeKW: number
+  systemSizeKW: number,
 ): string {
-  const quality = roofData.shadingLevel === 'low' ? 'excellent' :
-    roofData.shadingLevel === 'medium' ? 'good' : 'fair';
+  const quality =
+    roofData.shadingLevel === "low"
+      ? "excellent"
+      : roofData.shadingLevel === "medium"
+        ? "good"
+        : "fair";
 
   const panelCount = Math.round(systemSizeKW / 0.4);
 
-  const paybackQuality = financials.simplePaybackYears <= 10 ? 'outstanding' :
-    financials.simplePaybackYears <= 13 ? 'strong' : 'moderate';
+  const paybackQuality =
+    financials.simplePaybackYears <= 10
+      ? "outstanding"
+      : financials.simplePaybackYears <= 13
+        ? "strong"
+        : "moderate";
 
   return `Your PEI property shows ${quality} solar potential with ${roofData.usableAreaPercentage}% usable roof area. A ${systemSizeKW} kW system (${panelCount} × 400W panels) could save you approximately $${financials.annualElectricitySavings.toLocaleString()} annually at Maritime Electric's current rates, with a ${paybackQuality} payback period of ${financials.simplePaybackYears} years. Over 25 years, you could save up to $${financials.twentyFiveYearSavings.toLocaleString()}, and PEI's cold winters will actually boost your panel efficiency by 2-3%. Consider applying for the Canada Greener Homes grant (up to $5,000) to further reduce your upfront costs!`;
 }
@@ -1036,7 +1181,9 @@ function generateTemplateSummary(
 /**
  * Convert AI analysis result to RoofAnalysisResult type
  */
-export function convertToRoofAnalysisResult(aiData: AIRoofAnalysis): RoofAnalysisResult {
+export function convertToRoofAnalysisResult(
+  aiData: AIRoofAnalysis,
+): RoofAnalysisResult {
   return {
     roofAreaSqMeters: Math.round(aiData.roofAreaSqMeters),
     shadingLevel: aiData.shadingLevel,
