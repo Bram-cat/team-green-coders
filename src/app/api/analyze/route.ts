@@ -84,11 +84,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
     const imageBase64 = primaryImage.buffer.toString('base64');
     const imageDataUrl = `data:${primaryImage.mimeType};base64,${imageBase64}`;
 
-    // AUTO-GENERATE ADDITIONAL ANGLES if only 1 image provided (EXPERIMENTAL FEATURE)
-    // This uses DALL-E 3 to generate similar house views from different angles
-    // Note: Generated images are approximations, not the actual property
+    // AUTO-GENERATE ADDITIONAL ANGLES (EXPERIMENTAL - DISABLED BY DEFAULT)
+    // ⚠️ ACCURACY CONCERN: AI-generated images are approximations, not the actual property
+    // Real photos from multiple angles are ALWAYS more accurate
+    // Enable only for testing: set ENABLE_IMAGE_GENERATION=true in .env
     let generatedAngles: string[] = [];
-    if (images.length === 1) {
+    const AUTO_GENERATE_ENABLED = process.env.ENABLE_IMAGE_GENERATION === 'true';
+
+    if (images.length === 1 && AUTO_GENERATE_ENABLED) {
       try {
         console.log('[Auto-Gen] Single image detected. Attempting to generate additional angles...');
         const { generateAdditionalAngles } = await import('@/lib/ai/openaiService');
@@ -122,6 +125,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
         console.warn('[Auto-Gen] Continuing with single image analysis...');
         // Continue with analysis even if generation fails
       }
+    } else if (images.length === 1 && !AUTO_GENERATE_ENABLED) {
+      console.log('[Auto-Gen] Single image provided. Multi-angle generation is disabled. Encourage user to upload additional photos for better accuracy.');
     }
 
     // Prepare images for multi-image analysis

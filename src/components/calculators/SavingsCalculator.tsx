@@ -91,30 +91,65 @@ export function SavingsCalculator({
               <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Energy Consumption Profile</h4>
               <p className="text-2xl font-black text-foreground tracking-tight">Average Monthly Electric Bill</p>
             </div>
-            <div className="bg-primary/5 px-8 py-4 rounded-[2rem] border border-primary/10">
-              <div className="text-4xl font-black text-primary tracking-tighter">
-                ${monthlyBill.toFixed(0)} <span className="text-xs font-bold text-primary/40 uppercase tracking-widest ml-2">CAD / Mo</span>
+
+            {/* Input Field - Synced with Slider */}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                  <span className="text-2xl font-black text-primary/30">$</span>
+                </div>
+                <input
+                  type="number"
+                  min="50"
+                  max="1000"
+                  step="10"
+                  value={monthlyBill}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value) && value >= 50 && value <= 1000) {
+                      setMonthlyBill(value);
+                    } else if (e.target.value === '') {
+                      setMonthlyBill(50); // Default to minimum if cleared
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Clamp value on blur
+                    const value = parseFloat(e.target.value);
+                    if (isNaN(value) || value < 50) {
+                      setMonthlyBill(50);
+                    } else if (value > 1000) {
+                      setMonthlyBill(1000);
+                    }
+                  }}
+                  className="w-40 bg-primary/5 pl-10 pr-6 py-4 rounded-[2rem] border-2 border-primary/20 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-3xl font-black text-primary tracking-tighter transition-all"
+                  aria-label="Enter monthly electricity bill"
+                />
+                <div className="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none">
+                  <span className="text-xs font-bold text-primary/40 uppercase tracking-widest">CAD</span>
+                </div>
               </div>
+              <div className="text-xs font-bold text-muted-foreground/60 uppercase tracking-wider">/ Month</div>
             </div>
           </div>
 
           <div className="space-y-6">
+            {/* Slider with extended range */}
             <div className="relative h-4 flex items-center">
               <input
                 type="range"
                 min="50"
                 max="500"
                 step="10"
-                value={monthlyBill}
+                value={Math.min(monthlyBill, 500)} // Cap visual slider at 500
                 onChange={(e) => setMonthlyBill(parseFloat(e.target.value))}
-                aria-label="Adjust monthly electricity bill"
+                aria-label="Adjust monthly electricity bill with slider"
                 aria-valuemin={50}
                 aria-valuemax={500}
                 aria-valuenow={monthlyBill}
                 aria-valuetext={`$${monthlyBill} CAD per month`}
                 className="w-full h-2.5 bg-muted rounded-full appearance-none cursor-pointer slider-premium"
                 style={{
-                  background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((monthlyBill - 50) / 450) * 100}%, hsl(var(--muted)) ${((monthlyBill - 50) / 450) * 100}%, hsl(var(--muted)) 100%)`
+                  background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((Math.min(monthlyBill, 500) - 50) / 450) * 100}%, hsl(var(--muted)) ${((Math.min(monthlyBill, 500) - 50) / 450) * 100}%, hsl(var(--muted)) 100%)`
                 }}
               />
             </div>
@@ -126,6 +161,9 @@ export function SavingsCalculator({
                 </div>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground/60 text-center italic">
+              Use the slider (up to $500) or type any value in the field above (up to $1000)
+            </p>
           </div>
         </div>
       </div>

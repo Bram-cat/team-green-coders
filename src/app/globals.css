@@ -68,60 +68,92 @@
 
 @layer base {
   :root {
-    /* Green Palette from https://coolors.co/palette/132a13-31572c-4f772d-90a955-ecf39e */
-    --background: 0 0% 100%;
-    --foreground: 120 38% 12%;
-    /* #132a13 - Dark Forest Green */
-    --card: 0 0% 100%;
-    --card-foreground: 120 38% 12%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 120 38% 12%;
-    --primary: 113 33% 26%;
-    /* #31572c - Hunter Green */
-    --primary-foreground: 65 78% 79%;
-    /* #ecf39e - Light Yellow Green */
-    --secondary: 78 33% 50%;
-    /* #90a955 - Olivine */
-    --secondary-foreground: 120 38% 12%;
-    --muted: 65 78% 79%;
-    /* #ecf39e - Light Yellow Green */
-    --muted-foreground: 113 33% 26%;
-    --accent: 92 45% 32%;
-    /* #4f772d - Fern Green */
-    --accent-foreground: 65 78% 79%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 78 33% 85%;
-    --input: 78 33% 85%;
-    --ring: 113 33% 26%;
+    /* New Green Palette from https://coolors.co/palette/10451d-155d27-1a7431-208b3a-25a244-2dc653-4ad66d-6ede8a-92e6a7-b7efc5 */
+    /* Light Mode: Clean whites with green accents */
+    --background: 0 0% 100%;                    /* Pure white background */
+    --foreground: 127 62% 17%;                  /* #10451d - Darkest green for text */
+
+    --card: 0 0% 100%;                          /* White cards */
+    --card-foreground: 127 62% 17%;            /* Dark green text on cards */
+
+    --popover: 0 0% 100%;                       /* White popovers */
+    --popover-foreground: 127 62% 17%;         /* Dark green text */
+
+    --primary: 135 63% 34%;                     /* #208b3a - Vibrant medium green */
+    --primary-foreground: 0 0% 100%;           /* White text on primary */
+
+    --secondary: 135 58% 56%;                   /* #4ad66d - Bright green */
+    --secondary-foreground: 127 62% 17%;       /* Dark green text on secondary */
+
+    --muted: 135 61% 83%;                       /* #b7efc5 - Very light green */
+    --muted-foreground: 135 63% 28%;           /* #1a7431 - Medium-dark green */
+
+    --accent: 135 63% 39%;                      /* #25a244 - Vivid green */
+    --accent-foreground: 0 0% 100%;            /* White text on accent */
+
+    --destructive: 0 84.2% 60.2%;              /* Red for destructive actions */
+    --destructive-foreground: 0 0% 100%;       /* White text */
+
+    --border: 135 61% 74%;                      /* #92e6a7 - Light green borders */
+    --input: 135 61% 74%;                       /* Light green input borders */
+    --ring: 135 63% 34%;                        /* #208b3a - Focus ring */
+
     --radius: 0.5rem;
+
+    /* Additional green shades for custom use */
+    --green-50: 135 61% 83%;   /* #b7efc5 - Lightest */
+    --green-100: 135 61% 74%;  /* #92e6a7 */
+    --green-200: 135 61% 65%;  /* #6ede8a */
+    --green-300: 135 58% 56%;  /* #4ad66d */
+    --green-400: 135 63% 48%;  /* #2dc653 */
+    --green-500: 135 63% 39%;  /* #25a244 */
+    --green-600: 135 63% 34%;  /* #208b3a - Primary */
+    --green-700: 135 63% 28%;  /* #1a7431 */
+    --green-800: 135 63% 22%;  /* #155d27 */
+    --green-900: 127 62% 17%;  /* #10451d - Darkest */
   }
 
   .dark {
-    --background: 120 38% 12%;
-    /* #132a13 - Dark Forest Green */
-    --foreground: 65 78% 79%;
-    /* #ecf39e - Light Yellow Green */
-    --card: 113 33% 20%;
-    --card-foreground: 65 78% 79%;
-    --popover: 113 33% 20%;
-    --popover-foreground: 65 78% 79%;
-    --primary: 78 33% 50%;
-    /* #90a955 - Olivine */
-    --primary-foreground: 120 38% 12%;
-    --secondary: 113 33% 26%;
-    /* #31572c - Hunter Green */
-    --secondary-foreground: 65 78% 79%;
-    --muted: 113 33% 26%;
-    --muted-foreground: 78 33% 65%;
-    --accent: 92 45% 32%;
-    /* #4f772d - Fern Green */
-    --accent-foreground: 65 78% 79%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 65 78% 79%;
-    --border: 113 33% 26%;
-    --input: 113 33% 26%;
-    --ring: 78 33% 65%;
+    /* Dark Mode: Dark green background with light green accents */
+    --background: 127 62% 12%;                  /* Very dark green background (#0a2810) */
+    --foreground: 135 61% 83%;                  /* #b7efc5 - Light green text */
+
+    --card: 135 63% 22%;                        /* #155d27 - Dark green cards */
+    --card-foreground: 135 61% 83%;            /* Light green text */
+
+    --popover: 135 63% 22%;                     /* Dark green popovers */
+    --popover-foreground: 135 61% 83%;         /* Light green text */
+
+    --primary: 135 58% 56%;                     /* #4ad66d - Bright green (more visible in dark) */
+    --primary-foreground: 127 62% 12%;         /* Very dark green text */
+
+    --secondary: 135 63% 39%;                   /* #25a244 - Medium green */
+    --secondary-foreground: 135 61% 83%;       /* Light green text */
+
+    --muted: 135 63% 28%;                       /* #1a7431 - Medium-dark green */
+    --muted-foreground: 135 61% 74%;           /* #92e6a7 - Light-medium green */
+
+    --accent: 135 63% 48%;                      /* #2dc653 - Vibrant green */
+    --accent-foreground: 127 62% 12%;          /* Dark text on accent */
+
+    --destructive: 0 62.8% 40%;                /* Darker red for dark mode */
+    --destructive-foreground: 135 61% 83%;     /* Light green text */
+
+    --border: 135 63% 28%;                      /* #1a7431 - Medium-dark green borders */
+    --input: 135 63% 28%;                       /* Medium-dark green inputs */
+    --ring: 135 58% 56%;                        /* #4ad66d - Bright focus ring */
+
+    /* Dark mode green shades (same values, different context) */
+    --green-50: 135 61% 83%;   /* #b7efc5 */
+    --green-100: 135 61% 74%;  /* #92e6a7 */
+    --green-200: 135 61% 65%;  /* #6ede8a */
+    --green-300: 135 58% 56%;  /* #4ad66d */
+    --green-400: 135 63% 48%;  /* #2dc653 */
+    --green-500: 135 63% 39%;  /* #25a244 */
+    --green-600: 135 63% 34%;  /* #208b3a */
+    --green-700: 135 63% 28%;  /* #1a7431 */
+    --green-800: 135 63% 22%;  /* #155d27 */
+    --green-900: 127 62% 17%;  /* #10451d */
   }
 }
 
