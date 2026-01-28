@@ -1258,9 +1258,163 @@ export function convertToRoofAnalysisResult(
 /**
  * Check if OpenAI is available
  */
-export function isOpenAIAvailable(): { vision: boolean; text: boolean } {
+export function isOpenAIAvailable(): { vision: boolean; text: boolean; imageGeneration: boolean } {
   return {
     vision: !!openai1,
     text: !!openai2,
+    imageGeneration: !!openai2,
   };
+}
+
+// ============================================
+// MULTI-ANGLE IMAGE GENERATION (EXPERIMENTAL)
+// ============================================
+
+/**
+ * Generate additional house views from different angles using DALL-E 3
+ *
+ * IMPORTANT LIMITATIONS:
+ * - DALL-E 3 cannot transform an existing image to different angles
+ * - Instead, it analyzes the provided image and generates SIMILAR houses
+ * - Generated images are approximations, not the same building
+ * - This may reduce accuracy for solar analysis
+ * - Recommended: Upload real photos from multiple angles instead
+ *
+ * @param imageBuffer - Original house image
+ * @param mimeType - Image MIME type
+ * @param requestedAngles - Which angles to generate ('side', 'top', 'rear')
+ * @returns Array of generated images as buffers
+ */
+export async function generateAdditionalAngles(
+  imageBuffer: Buffer,
+  mimeType: string,
+  requestedAngles: Array<'side' | 'top' | 'rear'> = ['side', 'top']
+): Promise<Array<{ angle: string; buffer: Buffer; disclaimer: string }>> {
+  if (!openai2) {
+    throw new Error('Image generation API not configured (OPENAI_IMAGE_API_KEY_2)');
+  }
+
+  console.log('[Image Gen] Analyzing original image to extract house characteristics...');
+
+  // Step 1: Analyze the original image to get architectural details
+  const base64Image = imageBuffer.toString('base64');
+  const analysisPrompt = `Analyze this house photo and provide a detailed architectural description focusing on:
+- House style (e.g., bungalow, 2-story colonial, ranch, cape cod)
+- Exterior materials (siding, brick, stone, etc.)
+- Roof type (gable, hip, flat, complex)
+- Roof material (shingles, metal, tile)
+- Color scheme (walls, roof, trim)
+- Approximate size (small, medium, large)
+- Visible features (windows, doors, garage, chimney, dormers)
+- Landscaping/surroundings (trees, driveway, yard)
+- Season and weather conditions
+
+Be specific and detailed. This will be used to generate similar house views from different angles.
+
+Return ONLY a JSON object with this structure:
+{
+  "style": "string",
+  "exteriorMaterial": "string",
+  "roofType": "string",
+  "roofMaterial": "string",
+  "colorScheme": "string",
+  "size": "string",
+  "features": ["string"],
+  "surroundings": "string",
+  "season": "string"
+}`;
+
+  let houseDescription: any;
+  try {
+    const analysisResponse = await openai1!.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: analysisPrompt },
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+          ]
+        }
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: 500
+    });
+
+    houseDescription = JSON.parse(analysisResponse.choices[0]?.message?.content || '{}');
+    console.log('[Image Gen] House analysis complete:', houseDescription);
+  } catch (error) {
+    console.error('[Image Gen] Failed to analyze house:', error);
+    throw new Error('Failed to analyze house characteristics for image generation');
+  }
+
+  // Step 2: Generate images for each requested angle
+  const generatedImages: Array<{ angle: string; buffer: Buffer; disclaimer: string }> = [];
+
+  for (const angle of requestedAngles) {
+    try {
+      console.log(`[Image Gen] Generating ${angle} view...`);
+
+      // Create angle-specific prompt
+      const angleDescriptions: Record<string, string> = {
+        side: 'side view showing the full length of the house from the left or right side',
+        top: 'aerial view from above showing the entire roof and house footprint',
+        rear: 'rear view showing the back of the house'
+      };
+
+      const imagePrompt = `A realistic photograph of a ${houseDescription.size || 'medium-sized'} ${houseDescription.style || 'residential'} house, ${angleDescriptions[angle]}.
+
+Architectural details:
+- Exterior: ${houseDescription.exteriorMaterial || 'vinyl siding'}
+- Roof: ${houseDescription.roofType || 'gable'} roof with ${houseDescription.roofMaterial || 'asphalt shingles'}
+- Colors: ${houseDescription.colorScheme || 'neutral tones'}
+- Features: ${houseDescription.features?.join(', ') || 'standard residential features'}
+- Setting: ${houseDescription.surroundings || 'suburban neighborhood'}, ${houseDescription.season || 'clear day'}
+
+Style: Photorealistic, high quality, clear view of the entire structure, similar to a real estate listing photo. Professional photography.`;
+
+      const imageResponse = await openai2.images.generate({
+        model: 'dall-e-3',
+        prompt: imagePrompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'standard',
+        response_format: 'b64_json'
+      });
+
+      if (!imageResponse.data || imageResponse.data.length === 0) {
+        throw new Error(`No image data returned for ${angle} view`);
+      }
+
+      const imageData = imageResponse.data[0]?.b64_json;
+      if (!imageData) {
+        throw new Error(`No base64 image data in response for ${angle} view`);
+      }
+
+      const buffer = Buffer.from(imageData, 'base64');
+
+      generatedImages.push({
+        angle,
+        buffer,
+        disclaimer: `⚠️ AI-GENERATED ${angle.toUpperCase()} VIEW: This is an approximation based on architectural analysis, not the actual property. For accurate solar analysis, please upload real photos from multiple angles.`
+      });
+
+      console.log(`[Image Gen] ✓ Generated ${angle} view (${(buffer.length / 1024).toFixed(1)} KB)`);
+
+      // Add delay to respect rate limits
+      if (requestedAngles.indexOf(angle) < requestedAngles.length - 1) {
+        await delay(3000); // 3 second delay between generations
+      }
+    } catch (error: any) {
+      console.error(`[Image Gen] Failed to generate ${angle} view:`, error.message);
+      // Continue with other angles even if one fails
+    }
+  }
+
+  if (generatedImages.length === 0) {
+    throw new Error('Failed to generate any additional angle images');
+  }
+
+  console.log(`[Image Gen] Successfully generated ${generatedImages.length}/${requestedAngles.length} angle views`);
+  return generatedImages;
 }

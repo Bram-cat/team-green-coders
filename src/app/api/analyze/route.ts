@@ -84,6 +84,46 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
     const imageBase64 = primaryImage.buffer.toString('base64');
     const imageDataUrl = `data:${primaryImage.mimeType};base64,${imageBase64}`;
 
+    // AUTO-GENERATE ADDITIONAL ANGLES if only 1 image provided (EXPERIMENTAL FEATURE)
+    // This uses DALL-E 3 to generate similar house views from different angles
+    // Note: Generated images are approximations, not the actual property
+    let generatedAngles: string[] = [];
+    if (images.length === 1) {
+      try {
+        console.log('[Auto-Gen] Single image detected. Attempting to generate additional angles...');
+        const { generateAdditionalAngles } = await import('@/lib/ai/openaiService');
+
+        const generatedImages = await generateAdditionalAngles(
+          primaryImage.buffer,
+          primaryImage.mimeType,
+          ['side', 'top'] // Generate side and top views
+        );
+
+        // Add generated images to the analysis pool
+        for (const genImg of generatedImages) {
+          // Create a minimal File-like object (we only need buffer and mimeType for analysis)
+          const dummyFile = {
+            name: `generated-${genImg.angle}.jpg`,
+            type: 'image/jpeg',
+            size: genImg.buffer.length
+          } as File;
+
+          images.push({
+            file: dummyFile,
+            buffer: genImg.buffer,
+            mimeType: 'image/jpeg'
+          });
+          generatedAngles.push(genImg.angle);
+        }
+
+        console.log(`[Auto-Gen] ✓ Successfully generated ${generatedImages.length} additional angle(s): ${generatedAngles.join(', ')}`);
+      } catch (genError: any) {
+        console.warn('[Auto-Gen] Failed to generate additional angles:', genError.message);
+        console.warn('[Auto-Gen] Continuing with single image analysis...');
+        // Continue with analysis even if generation fails
+      }
+    }
+
     // Prepare images for multi-image analysis
     const imageBuffers = images.map(img => ({
       buffer: img.buffer,
@@ -217,6 +257,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeAP
         // Image for visualization (primary image)
         uploadedImageBase64: imageDataUrl,
         aiSummary,
+        // Multi-angle image generation metadata
+        generatedAngles: generatedAngles.length > 0 ? generatedAngles : undefined,
+        generatedImagesDisclaimer: generatedAngles.length > 0
+          ? '⚠️ Additional angle views were AI-generated approximations based on architectural analysis, not actual photos of your property. For most accurate results, upload real photos from multiple angles.'
+          : undefined,
       },
     });
 
