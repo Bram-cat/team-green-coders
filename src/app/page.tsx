@@ -454,18 +454,8 @@ export default function HomePage() {
             <div className="space-y-4">
               <h3 className="text-2xl font-bold text-primary">Green Coders</h3>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Developed by local PEI developers
+                Developed by a group of PEI coders
               </p>
-              <div className="pt-6">
-                <div className="inline-flex flex-col items-center">
-                  <span className="text-sm text-muted-foreground uppercase tracking-widest mb-1">
-                    Lead Developer & Visionary
-                  </span>
-                  <span className="text-2xl font-black italic bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                    Ram
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
