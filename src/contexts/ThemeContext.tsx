@@ -14,40 +14,57 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('system')
   const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
+  const [mounted, setMounted] = useState(false)
 
+  // Load theme from localStorage on mount
   useEffect(() => {
-    // Load from localStorage
+    setMounted(true)
     const saved = localStorage.getItem('solarpei-theme') as Theme
-    if (saved) setTheme(saved)
-
-    // Detect system preference
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const handleChange = () => {
-      if (theme === 'system') {
-        setEffectiveTheme(mediaQuery.matches ? 'dark' : 'light')
-      }
+    if (saved) {
+      setTheme(saved)
     }
+  }, [])
 
-    handleChange()
-    mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [theme])
-
+  // Apply theme to DOM and handle system preference changes
   useEffect(() => {
-    // Apply theme to DOM
+    if (!mounted) return
+
     const root = document.documentElement
-    if (theme === 'system') {
-      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      root.classList.toggle('dark', isDark)
+    const applyTheme = () => {
+      let isDark: boolean
+
+      if (theme === 'system') {
+        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      } else {
+        isDark = theme === 'dark'
+      }
+
+      // Remove and add class to ensure it's applied correctly
+      if (isDark) {
+        root.classList.add('dark')
+      } else {
+        root.classList.remove('dark')
+      }
+
       setEffectiveTheme(isDark ? 'dark' : 'light')
-    } else {
-      root.classList.toggle('dark', theme === 'dark')
-      setEffectiveTheme(theme)
     }
+
+    applyTheme()
 
     // Persist to localStorage
     localStorage.setItem('solarpei-theme', theme)
-  }, [theme])
+
+    // Listen for system preference changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = () => {
+      if (theme === 'system') {
+        applyTheme()
+      }
+    }
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [theme, mounted])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, effectiveTheme }}>
